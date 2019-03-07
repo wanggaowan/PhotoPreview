@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/transparent">
+
+    <com.wgw.photo.preview.NoTouchExceptionViewPager
+        android:id="@+id/view_pager"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <LinearLayout
+        android:id="@+id/ll_dot_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="40dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/iv_select_dot"
+        android:layout_width="7dp"
+        android:layout_height="7dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="40dp"
+        android:src="@drawable/selected_dot"
+        android:visibility="gone"
+        tools:ignore="ContentDescription"/>
+
+    <TextView
+        android:id="@+id/tv_text_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="36dp"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:visibility="gone"
+        tools:text="1 / 9"/>
+</RelativeLayout>
