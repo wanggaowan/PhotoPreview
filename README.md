@@ -3,6 +3,28 @@
 
 效果请下载[demoApk](/app-debug.apk)查看
 
+* [项目github地址](https://github.com/wanggaowan/PhotoPreview)
+
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![](https://jitpack.io/v/wanggaowan/PhotoPreview.svg)](https://jitpack.io/#wanggaowan/PhotoPreview)
+
+#### 引入：
+1. 添加 JitPack repository到你的build文件
+      ```groovy
+       allprojects {
+           repositories {
+               maven { url 'https://www.jitpack.io' }
+           }
+       }
+      ```
+
+2. 增加依赖
+      ```groovy
+      dependencies {
+         implementation 'com.github.wanggaowan:PhotoPreview:0.1'
+      }
+      ```
+
 #### Proguard
 无需添加任何混淆规则，可直接混淆
 
