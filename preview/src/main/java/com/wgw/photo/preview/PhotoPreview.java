@@ -19,6 +19,7 @@ import com.wgw.photo.preview.interfaces.ImageLoader;
 import com.wgw.photo.preview.interfaces.OnDismissListener;
 import com.wgw.photo.preview.interfaces.OnLongClickListener;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -101,8 +102,28 @@ public class PhotoPreview {
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
+    public void show(@NonNull View srcImageContainer, @NonNull Object... picUrls) {
+        show(srcImageContainer, Arrays.asList(picUrls));
+    }
+    
+    /**
+     * @param srcImageContainer 源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
+     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size
+     * @param picUrls           图片Url数据，该数据决定可预览图片的数量
+     */
+    @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(@NonNull View srcImageContainer, @NonNull List<?> picUrls) {
-        show(srcImageContainer, picUrls, 0);
+        show(srcImageContainer, 0, picUrls);
+    }
+    
+    /**
+     * @param srcImageContainer 源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
+     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size
+     * @param picUrls           图片Url数据，该数据决定可预览图片的数量
+     */
+    @SuppressLint({"SetTextI18n", "InflateParams"})
+    public void show(@NonNull View srcImageContainer, int defaultShowPosition, @NonNull Object... picUrls) {
+        show(srcImageContainer, defaultShowPosition, Arrays.asList(picUrls));
     }
     
     /**
@@ -112,7 +133,7 @@ public class PhotoPreview {
      * @param defaultShowPosition 默认展示图片的位置
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
-    public void show(@NonNull View srcImageContainer, @NonNull List<?> picUrls, int defaultShowPosition) {
+    public void show(@NonNull View srcImageContainer, int defaultShowPosition, @NonNull List<?> picUrls) {
         mSrcImageContainer = srcImageContainer;
         mPicUrls = picUrls;
         mDefaultShowPosition = defaultShowPosition;
@@ -130,8 +151,8 @@ public class PhotoPreview {
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
-        prepareViewPager(mActivity, decorView);
         prepareIndicator(mActivity);
+        prepareViewPager(mActivity, decorView);
         decorView.addView(mRootView);
     }
     
@@ -161,7 +182,7 @@ public class PhotoPreview {
             mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
                 @Override
                 public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                    if (IndicatorType.DOT == mIndicatorType && mPicUrls.size() > 1) {
+                    if (mLlDotIndicator.getVisibility() == View.VISIBLE) {
                         float dx = mLlDotIndicator.getChildAt(1).getX() - mLlDotIndicator.getChildAt(0).getX();
                         mIvSelectDot.setTranslationX((position * dx) + positionOffset * dx);
                     }
@@ -172,7 +193,7 @@ public class PhotoPreview {
                 public void onPageSelected(int position) {
                     mCurrentPagerIndex = position;
                     // 设置文字版本当前页的值
-                    if (IndicatorType.TEXT == mIndicatorType) {
+                    if (mTvTextIndicator.getVisibility() == View.VISIBLE) {
                         mTvTextIndicator.setText((mCurrentPagerIndex + 1) + " / " + mPicUrls.size());
                     }
                 }
@@ -190,7 +211,7 @@ public class PhotoPreview {
         adapter.setOnUpdateFragmentDataListener(new PhotoPreviewPagerAdapter.OnUpdateFragmentDataListener() {
             @Override
             public void onUpdate(PhotoPreviewFragment fragment, int position) {
-                fragment.setData(mLoadImage,position, mPicUrls.get(position), getViewSize(position), getViewLocation(position),
+                fragment.setData(mLoadImage, position, mPicUrls.get(position), getViewSize(position), getViewLocation(position),
                     position == mDefaultShowPosition);
                 fragment.setOnLongClickListener(mLongClickListener);
             }
@@ -234,7 +255,7 @@ public class PhotoPreview {
             });
             
             mLlDotIndicator.setVisibility(View.VISIBLE);
-        } else if (mPicUrls.size() > 9){
+        } else if (mPicUrls.size() > 9) {
             mTvTextIndicator.setVisibility(View.VISIBLE);
             mTvTextIndicator.setText((mCurrentPagerIndex + 1) + "/" + mPicUrls.size());
         }
