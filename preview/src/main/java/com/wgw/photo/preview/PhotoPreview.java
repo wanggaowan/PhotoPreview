@@ -40,7 +40,7 @@ public class PhotoPreview {
     /**
      * 图片地址数据
      */
-    private List<Object> mPicUrls;
+    private List<?> mPicUrls;
     
     /**
      * 源图片控件(小图)
@@ -101,7 +101,7 @@ public class PhotoPreview {
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
-    public void show(@NonNull View srcImageContainer, @NonNull List<Object> picUrls) {
+    public void show(@NonNull View srcImageContainer, @NonNull List<?> picUrls) {
         show(srcImageContainer, picUrls, 0);
     }
     
@@ -112,7 +112,7 @@ public class PhotoPreview {
      * @param defaultShowPosition 默认展示图片的位置
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
-    public void show(@NonNull View srcImageContainer, @NonNull List<Object> picUrls, int defaultShowPosition) {
+    public void show(@NonNull View srcImageContainer, @NonNull List<?> picUrls, int defaultShowPosition) {
         mSrcImageContainer = srcImageContainer;
         mPicUrls = picUrls;
         mDefaultShowPosition = defaultShowPosition;
