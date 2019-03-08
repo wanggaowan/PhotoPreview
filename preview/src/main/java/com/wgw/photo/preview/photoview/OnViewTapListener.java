@@ -1,4 +1,4 @@
-package com.github.chrisbanes.photoview;
+package com.wgw.photo.preview.photoview;
 
 import android.view.View;
 

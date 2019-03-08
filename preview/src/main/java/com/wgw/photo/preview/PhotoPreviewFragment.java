@@ -20,9 +20,9 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
-import com.github.chrisbanes.photoview.OnFingerUpListener;
-import com.github.chrisbanes.photoview.OnViewDragListener;
-import com.github.chrisbanes.photoview.PhotoView;
+import com.wgw.photo.preview.photoview.OnFingerUpListener;
+import com.wgw.photo.preview.photoview.OnViewDragListener;
+import com.wgw.photo.preview.photoview.PhotoView;
 import com.wgw.photo.preview.interfaces.ImageLoader;
 import com.wgw.photo.preview.interfaces.OnLongClickListener;
 
