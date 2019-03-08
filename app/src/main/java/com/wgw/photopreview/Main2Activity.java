@@ -1,6 +1,8 @@
 package com.wgw.photopreview;
 
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -47,6 +49,11 @@ public class Main2Activity extends AppCompatActivity {
                     .into(imageView);
             }
         });
+        photoPreview.setDelayShowProgressTime(200);
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            photoPreview.setProgressColor(Color.WHITE);
+        }
         
         photoPreview.setOnDismissListener(new OnDismissListener() {
             @Override

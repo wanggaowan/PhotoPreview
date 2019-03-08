@@ -4,7 +4,10 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.res.ColorStateList;
 import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -23,8 +26,6 @@ import com.github.chrisbanes.photoview.PhotoView;
 import com.wgw.photo.preview.interfaces.ImageLoader;
 import com.wgw.photo.preview.interfaces.OnLongClickListener;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -51,6 +52,9 @@ public class PhotoPreviewFragment extends Fragment {
     private int[] mImageSize;
     private int[] mImageLocation;
     private boolean mNeedInAnim;
+    private long mDelayShowProgressTime;
+    private Integer mProgressColor;
+    private Drawable mProgressDrawable;
     
     private OnExitListener mOnExitListener;
     private OnLongClickListener mOnLongClickListener;
@@ -79,6 +83,21 @@ public class PhotoPreviewFragment extends Fragment {
         initEvent();
         onLoadData();
         return view;
+    }
+    
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mSchedule != null) {
+            mSchedule.cancel(true);
+        }
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mService.shutdownNow();
+        mHandler.removeCallbacksAndMessages(null);
     }
     
     private void initData() {
@@ -182,6 +201,13 @@ public class PhotoPreviewFragment extends Fragment {
                 exit();
             }
         });
+    
+        mRoot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                exit();
+            }
+        });
     }
     
     public void onLoadData() {
@@ -221,7 +247,20 @@ public class PhotoPreviewFragment extends Fragment {
     
     private void checkLoadResult() {
         // 循环查看是否添加上了图片
-        mLoading.setVisibility(View.GONE);
+        if (mDelayShowProgressTime < 0) {
+            mLoading.setVisibility(View.GONE);
+            return;
+        }
+        
+        if (mProgressDrawable != null) {
+            mLoading.setIndeterminateDrawable(mProgressDrawable);
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mProgressColor != null) {
+            mLoading.setIndeterminateTintList(ColorStateList.valueOf(mProgressColor));
+        }
+        
+        mLoading.setVisibility(mDelayShowProgressTime == 0 ? View.VISIBLE : View.GONE);
         mSchedule = mService.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -242,7 +281,7 @@ public class PhotoPreviewFragment extends Fragment {
                     });
                 }
             }
-        }, 100, 100, TimeUnit.MILLISECONDS);
+        }, mDelayShowProgressTime == 0 ? 100 : mDelayShowProgressTime, 100, TimeUnit.MILLISECONDS);
     }
     
     private void exit() {
@@ -256,12 +295,12 @@ public class PhotoPreviewFragment extends Fragment {
             mImageLocation[1] - mPhotoView.getHeight() / 2f + mPhotoView.getScrollY());
         
         AnimatorSet set = new AnimatorSet();
-        set.setDuration(250);
+        set.setDuration(200);
         set.playTogether(scaleOa, xOa, yOa);
         
         if (mIntAlpha > 0) {
             ValueAnimator bgVa = ValueAnimator.ofInt(mIntAlpha, 0);
-            bgVa.setDuration(250);
+            bgVa.setDuration(200);
             bgVa.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
@@ -272,25 +311,29 @@ public class PhotoPreviewFragment extends Fragment {
         }
         set.start();
         
-        new Timer().schedule(new TimerTask() {
+        mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 if (mOnExitListener != null) {
                     mOnExitListener.onExit();
                 }
             }
-        }, 270);
+        }, 220);
     }
     
     public void setData(@NonNull ImageLoader loadImage, int position,
                         Object url, int[] imageSize, int[] imageLocation,
-                        boolean needInAnim) {
+                        boolean needInAnim, long delayShowProgressTime,
+                        Integer progressColor, Drawable progressDrawable) {
         mLoadImage = loadImage;
         mUrl = url;
         mImageSize = imageSize;
         mImageLocation = imageLocation;
         mNeedInAnim = needInAnim;
         mPosition = position;
+        mDelayShowProgressTime = delayShowProgressTime;
+        mProgressColor = progressColor;
+        mProgressDrawable = progressDrawable;
     }
     
     public void setOnExitListener(OnExitListener onExitListener) {

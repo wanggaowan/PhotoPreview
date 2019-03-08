@@ -1,8 +1,11 @@
 package com.wgw.photo.preview;
 
 import android.annotation.SuppressLint;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -12,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -72,6 +76,22 @@ public class PhotoPreview {
     private int mIndicatorType = IndicatorType.DOT;
     
     /**
+     * 在调用{@link ImageLoader#onLoadImage(int, Object, ImageView)}时延迟展示loading框的时间，
+     * < 0:不展示，=0:立即显示，>0:延迟给定时间显示，默认延迟100ms显示，如果在此时间内加载完成则不显示，否则显示
+     */
+    private long mDelayShowProgressTime = 100;
+    
+    /**
+     * 图片loading时展示的loading框颜色,使用系统默认加载框图像，只是修改颜色
+     */
+    private Integer mProgressColor;
+    
+    /**
+     * 自定义loading框Drawable，此参数作用于{@link ProgressBar#setIndeterminateDrawable(Drawable)}
+     */
+    private Drawable mProgressDrawable;
+    
+    /**
      * @param activity  当前图片预览所处Activity
      * @param loadImage 图片加载回调，图片加载逻辑需要外部自己实现
      */
@@ -94,6 +114,19 @@ public class PhotoPreview {
     
     public void setIndicatorType(@IndicatorType int indicatorType) {
         this.mIndicatorType = indicatorType;
+    }
+    
+    public void setDelayShowProgressTime(long delayShowProgressTime) {
+        mDelayShowProgressTime = delayShowProgressTime;
+    }
+    
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void setProgressColor(int progressColor) {
+        mProgressColor = progressColor;
+    }
+    
+    public void setProgressDrawable(Drawable progressDrawable) {
+        mProgressDrawable = progressDrawable;
     }
     
     /**
@@ -212,7 +245,7 @@ public class PhotoPreview {
             @Override
             public void onUpdate(PhotoPreviewFragment fragment, int position) {
                 fragment.setData(mLoadImage, position, mPicUrls.get(position), getViewSize(position), getViewLocation(position),
-                    position == mDefaultShowPosition);
+                    position == mDefaultShowPosition, mDelayShowProgressTime, mProgressColor, mProgressDrawable);
                 fragment.setOnLongClickListener(mLongClickListener);
             }
         });
