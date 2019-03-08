@@ -168,7 +168,7 @@ public class PhotoPreviewFragment extends Fragment {
                 }
                 // 更改透明度
                 mRoot.getBackground().setAlpha(mIntAlpha);
-                if (mAlpha >= 0.6) {
+                if (scrollY < 0 && mAlpha >= 0.6) {
                     // 更改大小
                     mPhotoView.getAttacher().setScale(mAlpha);
                 }

@@ -121,7 +121,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             }
             
             if (mOnViewDragListener != null) {
-                if (isBottomDrag && mCurrentState != STATE_SCALE) {
+                if (isBottomDrag && getScale() <= mMinScale && mCurrentState != STATE_SCALE) {
                     mCurrentState = STATE_DRAG;
                     // only drag to bottom
                     mOnViewDragListener.onDrag(dx, dy);

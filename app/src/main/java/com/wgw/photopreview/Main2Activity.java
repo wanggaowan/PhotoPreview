@@ -61,7 +61,7 @@ public class Main2Activity extends AppCompatActivity {
                 ImageView imageView = view.findViewById(R.id.itemIv);
                 clickPositionDrawable = imageView.getDrawable();
                 clickPosition = position;
-                photoPreview.show(recyclerView, Arrays.<Object>asList(picData), position);
+                photoPreview.show(recyclerView, position, Arrays.<Object>asList(picData));
             }
         });
     }
