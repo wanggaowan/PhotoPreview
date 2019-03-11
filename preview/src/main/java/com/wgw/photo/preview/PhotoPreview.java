@@ -32,7 +32,9 @@ import java.util.List;
  * @author Created by 汪高皖 on 2019/2/26 0026 16:55
  */
 public class PhotoPreview {
-    private View mRootView;
+    private static int VIEW_PAGER_ID = -10000;
+    
+    private RelativeLayout mRootView;
     private ViewPager mViewPager;
     private LinearLayout mLlDotIndicator;
     private ImageView mIvSelectDot;
@@ -172,27 +174,41 @@ public class PhotoPreview {
         mDefaultShowPosition = defaultShowPosition;
         mCurrentPagerIndex = defaultShowPosition;
         final ViewGroup decorView = (ViewGroup) mActivity.getWindow().getDecorView();
-        
+    
+        mRootView = mActivity.findViewById(R.id.rl_root_photo_preview);
         if (mRootView == null) {
-            mRootView = LayoutInflater.from(mActivity).inflate(R.layout.view_preview_root, null);
-            mViewPager = mRootView.findViewById(R.id.view_pager);
-            mLlDotIndicator = mRootView.findViewById(R.id.ll_dot_indicator);
-            mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot);
-            mTvTextIndicator = mRootView.findViewById(R.id.tv_text_indicator);
+            View root = LayoutInflater.from(mActivity).inflate(R.layout.view_preview_root, null);
+            mRootView = root.findViewById(R.id.rl_root_photo_preview);
+            decorView.addView(mRootView);
+        }
+        mRootView.setVisibility(View.VISIBLE);
+    
+        if (mLlDotIndicator == null) {
+            mLlDotIndicator = mRootView.findViewById(R.id.ll_dot_indicator_photo_preview);
+            mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot_photo_preview);
+            mTvTextIndicator = mRootView.findViewById(R.id.tv_text_indicator_photo_preview);
         }
         
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
         prepareIndicator(mActivity);
-        prepareViewPager(mActivity, decorView);
-        decorView.addView(mRootView);
+        prepareViewPager(mActivity);
     }
     
     /**
      * 准备用于展示预览图的ViePager数据
      */
-    private void prepareViewPager(final AppCompatActivity activity, final ViewGroup decorView) {
+    private void prepareViewPager(final AppCompatActivity activity) {
+        if (mViewPager == null) {
+            mViewPager = new NoTouchExceptionViewPager(mActivity);
+            ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+            mViewPager.setLayoutParams(params);
+            mViewPager.setId(VIEW_PAGER_ID--);
+        }
+        mRootView.addView(mViewPager, 0);
+        
         PhotoPreviewPagerAdapter adapter;
         if (mViewPager.getAdapter() == null) {
             adapter = new PhotoPreviewPagerAdapter(activity.getSupportFragmentManager(), mPicUrls.size());
@@ -202,7 +218,8 @@ public class PhotoPreview {
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            decorView.removeView(mRootView);
+                            mRootView.removeView(mViewPager);
+                            mRootView.setVisibility(View.GONE);
                             if (mOnDismissListener != null) {
                                 mOnDismissListener.onDismiss();
                             }

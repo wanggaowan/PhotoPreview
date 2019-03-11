@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
+    android:id="@+id/rl_root_photo_preview"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/transparent">
 
-    <com.wgw.photo.preview.NoTouchExceptionViewPager
-        android:id="@+id/view_pager"
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
     <LinearLayout
-        android:id="@+id/ll_dot_indicator"
+        android:id="@+id/ll_dot_indicator_photo_preview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -23,7 +18,7 @@
         android:visibility="gone"/>
 
     <ImageView
-        android:id="@+id/iv_select_dot"
+        android:id="@+id/iv_select_dot_photo_preview"
         android:layout_width="7dp"
         android:layout_height="7dp"
         android:layout_alignParentBottom="true"
@@ -33,7 +28,7 @@
         tools:ignore="ContentDescription"/>
 
     <TextView
-        android:id="@+id/tv_text_indicator"
+        android:id="@+id/tv_text_indicator_photo_preview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"

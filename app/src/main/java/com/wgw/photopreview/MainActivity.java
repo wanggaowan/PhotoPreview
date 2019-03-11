@@ -15,4 +15,8 @@ public class MainActivity extends AppCompatActivity {
     public void goPreview(View view) {
         startActivity(new Intent(this,Main2Activity.class));
     }
+    
+    public void goMain3Activity(View view) {
+        startActivity(new Intent(this,Main3Activity.class));
+    }
 }
