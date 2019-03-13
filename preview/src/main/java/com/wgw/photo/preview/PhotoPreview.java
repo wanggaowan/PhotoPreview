@@ -137,7 +137,7 @@ public class PhotoPreview {
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
-    public void show(@NonNull View srcImageContainer, @NonNull Object... picUrls) {
+    public void show(View srcImageContainer, @NonNull Object... picUrls) {
         show(srcImageContainer, Arrays.asList(picUrls));
     }
     
@@ -147,7 +147,7 @@ public class PhotoPreview {
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
-    public void show(@NonNull View srcImageContainer, @NonNull List<?> picUrls) {
+    public void show(View srcImageContainer, @NonNull List<?> picUrls) {
         show(srcImageContainer, 0, picUrls);
     }
     
@@ -205,7 +205,7 @@ public class PhotoPreview {
             ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
             mViewPager.setLayoutParams(params);
-            mViewPager.setId(VIEW_PAGER_ID--);
+            mViewPager.setId(mViewPager.hashCode());
         }
         mRootView.addView(mViewPager, 0);
         
