@@ -13,18 +13,21 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
+import com.wgw.photo.preview.interfaces.ImageLoader;
+import com.wgw.photo.preview.interfaces.OnLongClickListener;
 import com.wgw.photo.preview.photoview.OnFingerUpListener;
 import com.wgw.photo.preview.photoview.OnViewDragListener;
 import com.wgw.photo.preview.photoview.PhotoView;
-import com.wgw.photo.preview.interfaces.ImageLoader;
-import com.wgw.photo.preview.interfaces.OnLongClickListener;
+import com.wgw.photo.preview.util.NotchUtils;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -201,7 +204,7 @@ public class PhotoPreviewFragment extends Fragment {
                 exit();
             }
         });
-    
+        
         mRoot.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -227,8 +230,10 @@ public class PhotoPreviewFragment extends Fragment {
                 @Override
                 public void run() {
                     mPhotoView.setVisibility(View.VISIBLE);
-                    ObjectAnimator scaleOa = ObjectAnimator.ofFloat(mPhotoView, "scale",
+                    ObjectAnimator scaleXOa = ObjectAnimator.ofFloat(mPhotoView, "scaleX",
                         mImageSize[0] * 1f / mPhotoView.getWidth(), 1f);
+                    ObjectAnimator scaleYOa = ObjectAnimator.ofFloat(mPhotoView, "scaleY",
+                        mImageSize[1] * 1f / mPhotoView.getHeight(), 1f);
                     ObjectAnimator xOa = ObjectAnimator.ofFloat(mPhotoView, "translationX",
                         mImageLocation[0] - mPhotoView.getWidth() / 2f, 0f);
                     ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY",
@@ -236,7 +241,7 @@ public class PhotoPreviewFragment extends Fragment {
                     
                     AnimatorSet set = new AnimatorSet();
                     set.setDuration(250);
-                    set.playTogether(scaleOa, xOa, yOa);
+                    set.playTogether(scaleXOa, scaleYOa, xOa, yOa);
                     set.start();
                 }
             });
@@ -291,23 +296,31 @@ public class PhotoPreviewFragment extends Fragment {
             mPhotoView.getAttacher().getScale(m));
         ObjectAnimator xOa = ObjectAnimator.ofFloat(mPhotoView, "translationX",
             mImageLocation[0] - mPhotoView.getWidth() / 2f + mPhotoView.getScrollX());
-        ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY",
-            mImageLocation[1] - mPhotoView.getHeight() / 2f + mPhotoView.getScrollY());
+        
+        float translationY = mImageLocation[1] - mPhotoView.getHeight() / 2f + mPhotoView.getScrollY();
+        if (getActivity() != null && NotchUtils.isNotch(getActivity().getWindow())) {
+            // 异形屏
+            FragmentActivity activity = getActivity();
+            WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
+            if ((attributes.flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) == 0) {
+                // 非全屏
+                translationY -= getStatusBarHeight();
+            }
+        } else {
+            translationY -= getStatusBarHeight();
+        }
+        
+        ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY", translationY);
         
         AnimatorSet set = new AnimatorSet();
-        set.setDuration(200);
+        set.setDuration(250);
         set.playTogether(scaleOa, xOa, yOa);
         
         if (mIntAlpha > 0) {
-            ValueAnimator bgVa = ValueAnimator.ofInt(mIntAlpha, 0);
-            bgVa.setDuration(200);
-            bgVa.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    mRoot.getBackground().setAlpha((Integer) animation.getAnimatedValue());
-                }
-            });
-            bgVa.start();
+            mRoot.getBackground().setAlpha(0);
+        }
+        if (mOnExitListener != null) {
+            mOnExitListener.onStart();
         }
         set.start();
         
@@ -318,7 +331,16 @@ public class PhotoPreviewFragment extends Fragment {
                     mOnExitListener.onExit();
                 }
             }
-        }, 220);
+        }, 270);
+    }
+    
+    private int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
     }
     
     public void setData(@NonNull ImageLoader loadImage, int position,
@@ -345,6 +367,16 @@ public class PhotoPreviewFragment extends Fragment {
     }
     
     public interface OnExitListener {
+        /**
+         * 退出动作开始执行
+         */
+        void onStart();
+        
+        /**
+         * 完全退出
+         */
         void onExit();
     }
+    
+    
 }

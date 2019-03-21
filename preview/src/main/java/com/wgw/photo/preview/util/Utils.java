@@ -1,4 +1,4 @@
-package com.wgw.photo.preview;
+package com.wgw.photo.preview.util;
 
 import android.content.Context;
 import android.graphics.Matrix;

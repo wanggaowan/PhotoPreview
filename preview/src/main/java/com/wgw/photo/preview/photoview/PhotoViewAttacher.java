@@ -397,7 +397,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
                     // to min scale
                     
                     // change source code
-                    if (mCurrentState != STATE_SCALE) {
+                    if (mCurrentState == STATE_SCALE) {
                         if (getScale() < mMinScale) {
                             RectF rect = getDisplayRect();
                             if (rect != null) {
