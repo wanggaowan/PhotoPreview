@@ -1,4 +1,4 @@
-package com.wgw.photo.preview.util;
+package com.wgw.photo.preview.util.notch;
 
 
 import android.os.Build;
@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 
 @SuppressWarnings("WeakerAccess")
 public class OSUtils {
+    private static final String TAG = OSUtils.class.getSimpleName();
+    
     public static final String ROM_MIUI = "MIUI";
     public static final String ROM_EMUI = "EMUI";
     public static final String ROM_FLYME = "FLYME";

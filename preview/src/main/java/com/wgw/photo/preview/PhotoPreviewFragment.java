@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -13,12 +14,10 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
@@ -27,7 +26,8 @@ import com.wgw.photo.preview.interfaces.OnLongClickListener;
 import com.wgw.photo.preview.photoview.OnFingerUpListener;
 import com.wgw.photo.preview.photoview.OnViewDragListener;
 import com.wgw.photo.preview.photoview.PhotoView;
-import com.wgw.photo.preview.util.NotchUtils;
+import com.wgw.photo.preview.util.Utils;
+import com.wgw.photo.preview.util.notch.OSUtils;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,6 +58,7 @@ public class PhotoPreviewFragment extends Fragment {
     private long mDelayShowProgressTime;
     private Integer mProgressColor;
     private Drawable mProgressDrawable;
+    private boolean mFullScreen;
     
     private OnExitListener mOnExitListener;
     private OnLongClickListener mOnLongClickListener;
@@ -237,7 +238,7 @@ public class PhotoPreviewFragment extends Fragment {
                     ObjectAnimator xOa = ObjectAnimator.ofFloat(mPhotoView, "translationX",
                         mImageLocation[0] - mPhotoView.getWidth() / 2f, 0f);
                     ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY",
-                        mImageLocation[1] - mPhotoView.getWidth() / 2f, 0f);
+                        getTranslationY(), 0f);
                     
                     AnimatorSet set = new AnimatorSet();
                     set.setDuration(250);
@@ -297,27 +298,14 @@ public class PhotoPreviewFragment extends Fragment {
         ObjectAnimator xOa = ObjectAnimator.ofFloat(mPhotoView, "translationX",
             mImageLocation[0] - mPhotoView.getWidth() / 2f + mPhotoView.getScrollX());
         
-        float translationY = mImageLocation[1] - mPhotoView.getHeight() / 2f + mPhotoView.getScrollY();
-        if (getActivity() != null && NotchUtils.isNotch(getActivity().getWindow())) {
-            // 异形屏
-            FragmentActivity activity = getActivity();
-            WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
-            if ((attributes.flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) == 0) {
-                // 非全屏
-                translationY -= getStatusBarHeight();
-            }
-        } else {
-            translationY -= getStatusBarHeight();
-        }
-        
-        ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY", translationY);
+        ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY", getTranslationY());
         
         AnimatorSet set = new AnimatorSet();
         set.setDuration(250);
         set.playTogether(scaleOa, xOa, yOa);
         
         if (mIntAlpha > 0) {
-            mRoot.getBackground().setAlpha(0);
+            mRoot.setBackgroundColor(Color.TRANSPARENT);
         }
         if (mOnExitListener != null) {
             mOnExitListener.onStart();
@@ -331,22 +319,23 @@ public class PhotoPreviewFragment extends Fragment {
                     mOnExitListener.onExit();
                 }
             }
-        }, 270);
+        }, 250);
     }
     
-    private int getStatusBarHeight() {
-        int result = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            result = getResources().getDimensionPixelSize(resourceId);
+    private float getTranslationY(){
+        float translationY = mImageLocation[1]
+            - mPhotoView.getHeight() / 2f
+            + mPhotoView.getScrollY();
+        if (OSUtils.isVivo() || !mFullScreen) {
+            translationY -= Utils.getStatusBarHeight(requireContext());
         }
-        return result;
+        return translationY;
     }
     
     public void setData(@NonNull ImageLoader loadImage, int position,
                         Object url, int[] imageSize, int[] imageLocation,
                         boolean needInAnim, long delayShowProgressTime,
-                        Integer progressColor, Drawable progressDrawable) {
+                        Integer progressColor, Drawable progressDrawable,boolean fullScreen) {
         mLoadImage = loadImage;
         mUrl = url;
         mImageSize = imageSize;
@@ -356,6 +345,7 @@ public class PhotoPreviewFragment extends Fragment {
         mDelayShowProgressTime = delayShowProgressTime;
         mProgressColor = progressColor;
         mProgressDrawable = progressDrawable;
+        mFullScreen = fullScreen;
     }
     
     public void setOnExitListener(OnExitListener onExitListener) {

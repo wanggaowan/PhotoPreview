@@ -8,12 +8,18 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:text="go preview"
-        android:onClick="goPreview"/>
+        android:onClick="goPreview"
+        android:text="go preview"/>
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:text="go Main3Activity"
-        android:onClick="goMain3Activity"/>
+        android:onClick="goMain3Activity"
+        android:text="go Main3Activity"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:onClick="showDialogPreview"
+        android:text="dialog preview"/>
 </LinearLayout>

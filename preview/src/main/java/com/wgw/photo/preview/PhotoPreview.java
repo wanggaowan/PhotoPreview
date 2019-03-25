@@ -18,7 +18,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 图片预览，支持预览单张，多张图片
+ * 图片预览，支持预览单张，多张图片。预览界面是否全屏预览根据构造函数{@link PhotoPreview#PhotoPreview(AppCompatActivity, ImageLoader)}所传
+ * Activity是否全屏决定。预览界面目前只能做到保持和Activity是否全屏一致的设置时顺滑打开和关闭预览界面，如果不一致，会导致打开关闭闪屏，特别是异形屏。
+ * 后续加入单独设置预览界面是否全屏的设置。
  *
  * @author Created by 汪高皖 on 2019/2/26 0026 16:55
  */

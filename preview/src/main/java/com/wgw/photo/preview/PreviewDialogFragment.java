@@ -31,6 +31,8 @@ import com.wgw.photo.preview.interfaces.ImageLoader;
 import com.wgw.photo.preview.interfaces.OnDismissListener;
 import com.wgw.photo.preview.interfaces.OnLongClickListener;
 import com.wgw.photo.preview.util.Utils;
+import com.wgw.photo.preview.util.notch.CutOutMode;
+import com.wgw.photo.preview.util.notch.NotchAdapterUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -121,14 +123,30 @@ public class PreviewDialogFragment extends DialogFragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         // 全屏处理
+        boolean fullScreen = (mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
         Window window = getDialog().getWindow();
+        if (fullScreen) {
+            NotchAdapterUtils.adapter(window, CutOutMode.SHORT_EDGES);
+        }
+        
         if (window != null) {
             window.requestFeature(Window.FEATURE_NO_TITLE);
         }
         super.onActivityCreated(savedInstanceState);
         if (window != null) {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                window.setStatusBarColor(Color.BLACK);
+            }
+            WindowManager.LayoutParams lp = window.getAttributes();
+            lp.dimAmount = 0;
+            lp.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+            if (fullScreen) {
+                lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            }
+            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+            lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+            window.setAttributes(lp);
         }
     }
     
@@ -216,7 +234,7 @@ public class PreviewDialogFragment extends DialogFragment {
                     mIvSelectDot.setVisibility(View.GONE);
                     mTvTextIndicator.setVisibility(View.GONE);
                 }
-    
+                
                 @Override
                 public void onExit() {
                     dismissAllowingStateLoss();
@@ -265,8 +283,9 @@ public class PreviewDialogFragment extends DialogFragment {
         adapter.setOnUpdateFragmentDataListener(new PhotoPreviewPagerAdapter.OnUpdateFragmentDataListener() {
             @Override
             public void onUpdate(PhotoPreviewFragment fragment, int position) {
+                boolean fullScreen = (mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
                 fragment.setData(mImageLoader, position, mPicUrls.get(position), getViewSize(position), getViewLocation(position),
-                    position == mDefaultShowPosition, mDelayShowProgressTime, mProgressColor, mProgressDrawable);
+                    position == mDefaultShowPosition, mDelayShowProgressTime, mProgressColor, mProgressDrawable, fullScreen);
                 fragment.setOnLongClickListener(mLongClickListener);
             }
         });
@@ -369,7 +388,7 @@ public class PreviewDialogFragment extends DialogFragment {
             }
             return result;
         }
-        itemView.getLocationInWindow(result);
+        itemView.getLocationOnScreen(result);
         result[0] += itemView.getMeasuredWidth() / 2;
         result[1] += itemView.getMeasuredHeight() / 2;
         return result;
