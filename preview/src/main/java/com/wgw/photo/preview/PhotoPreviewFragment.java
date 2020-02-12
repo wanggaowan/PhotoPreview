@@ -4,6 +4,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class PhotoPreviewFragment extends Fragment {
     
+    private Context mContext;
     private FrameLayout mRoot;
     private PhotoView mPhotoView;
     private ProgressBar mLoading;
@@ -66,6 +68,12 @@ public class PhotoPreviewFragment extends Fragment {
     // 透明度
     private float mAlpha = 1f;
     private int mIntAlpha = 255;
+    
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mContext = context;
+    }
     
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -327,7 +335,7 @@ public class PhotoPreviewFragment extends Fragment {
             - mPhotoView.getHeight() / 2f
             + mPhotoView.getScrollY();
         if (OSUtils.isVivo() || !mFullScreen) {
-            translationY -= Utils.getStatusBarHeight(requireContext());
+            translationY -= Utils.getStatusBarHeight(mContext);
         }
         return translationY;
     }
