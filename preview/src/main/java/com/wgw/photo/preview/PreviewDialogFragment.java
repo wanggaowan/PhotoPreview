@@ -210,19 +210,26 @@ public class PreviewDialogFragment extends DialogFragment {
         mPicUrls = picUrls;
         mDefaultShowPosition = defaultShowPosition;
         mCurrentPagerIndex = defaultShowPosition;
-        show(mActivity.getSupportFragmentManager(), tag);
+        if (isAdded()) {
+            initViewData();
+        } else {
+            show(mActivity.getSupportFragmentManager(), tag);
+        }
+        
     }
     
     /**
      * 准备用于展示预览图的ViePager数据
      */
     private void prepareViewPager() {
-        mViewPager = new NoTouchExceptionViewPager(mContext);
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT);
-        mViewPager.setLayoutParams(params);
-        mViewPager.setId(mViewPager.hashCode());
-        mRootView.addView(mViewPager, 0);
+        if (mViewPager == null) {
+            mViewPager = new NoTouchExceptionViewPager(mContext);
+            ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+            mViewPager.setLayoutParams(params);
+            mViewPager.setId(mViewPager.hashCode());
+            mRootView.addView(mViewPager, 0);
+        }
         
         PhotoPreviewPagerAdapter adapter;
         if (mViewPager.getAdapter() == null) {
@@ -239,6 +246,7 @@ public class PreviewDialogFragment extends DialogFragment {
                 public void onExit() {
                     dismissAllowingStateLoss();
                     mRootView.removeView(mViewPager);
+                    mViewPager = null;
                     ViewParent parent = mRootView.getParent();
                     if (parent instanceof ViewGroup) {
                         ((ViewGroup) parent).removeView(mRootView);
