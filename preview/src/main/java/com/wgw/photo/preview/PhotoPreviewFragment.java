@@ -78,22 +78,28 @@ public class PhotoPreviewFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initData();
+        if (savedInstanceState == null) {
+            initData();
+        }
     }
     
+    @SuppressLint("InflateParams")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        @SuppressLint("InflateParams") View view = inflater.inflate(R.layout.fragment_preview, null);
-        mRoot = view.findViewById(R.id.root);
-        mRoot.setFocusableInTouchMode(true);
-        mRoot.requestFocus();
-        
-        mPhotoView = view.findViewById(R.id.photoView);
-        mLoading = view.findViewById(R.id.loading);
-        
-        initEvent();
-        onLoadData();
+        View view = null;
+        if (savedInstanceState == null) {
+            view = inflater.inflate(R.layout.fragment_preview, null);
+            mRoot = view.findViewById(R.id.root);
+            mRoot.setFocusableInTouchMode(true);
+            mRoot.requestFocus();
+            
+            mPhotoView = view.findViewById(R.id.photoView);
+            mLoading = view.findViewById(R.id.loading);
+            
+            initEvent();
+            onLoadData();
+        }
         return view;
     }
     
@@ -108,8 +114,13 @@ public class PhotoPreviewFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mService.shutdownNow();
-        mHandler.removeCallbacksAndMessages(null);
+        if (mService != null) {
+            mService.shutdownNow();
+        }
+        
+        if (mHandler != null) {
+            mHandler.removeCallbacksAndMessages(null);
+        }
     }
     
     private void initData() {
@@ -330,7 +341,7 @@ public class PhotoPreviewFragment extends Fragment {
         }, 250);
     }
     
-    private float getTranslationY(){
+    private float getTranslationY() {
         float translationY = mImageLocation[1]
             - mPhotoView.getHeight() / 2f
             + mPhotoView.getScrollY();
@@ -343,7 +354,7 @@ public class PhotoPreviewFragment extends Fragment {
     public void setData(@NonNull ImageLoader loadImage, int position,
                         Object url, int[] imageSize, int[] imageLocation,
                         boolean needInAnim, long delayShowProgressTime,
-                        Integer progressColor, Drawable progressDrawable,boolean fullScreen) {
+                        Integer progressColor, Drawable progressDrawable, boolean fullScreen) {
         mLoadImage = loadImage;
         mUrl = url;
         mImageSize = imageSize;
@@ -375,6 +386,5 @@ public class PhotoPreviewFragment extends Fragment {
          */
         void onExit();
     }
-    
     
 }

@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -122,6 +123,12 @@ public class PreviewDialogFragment extends DialogFragment {
     
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            // 说明是被回收后恢复，此时不恢复
+            super.onActivityCreated(savedInstanceState);
+            return;
+        }
+        
         // 全屏处理
         boolean fullScreen = (mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
         Window window = getDialog().getWindow();
@@ -132,7 +139,7 @@ public class PreviewDialogFragment extends DialogFragment {
         if (window != null) {
             window.requestFeature(Window.FEATURE_NO_TITLE);
         }
-        super.onActivityCreated(savedInstanceState);
+        super.onActivityCreated(null);
         if (window != null) {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -160,7 +167,13 @@ public class PreviewDialogFragment extends DialogFragment {
             mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot_photo_preview);
             mTvTextIndicator = mRootView.findViewById(R.id.tv_text_indicator_photo_preview);
         }
-        initViewData();
+        if (savedInstanceState == null) {
+            initViewData();
+        } else {
+            // 被回收后恢复，则关闭弹窗
+            dismiss();
+        }
+        
         return mRootView;
     }
     
@@ -210,12 +223,13 @@ public class PreviewDialogFragment extends DialogFragment {
         mPicUrls = picUrls;
         mDefaultShowPosition = defaultShowPosition;
         mCurrentPagerIndex = defaultShowPosition;
-        if (isAdded()) {
+        FragmentManager manager = mActivity.getSupportFragmentManager();
+        // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
+        if (isAdded() || manager.findFragmentByTag(tag) != null) {
             initViewData();
         } else {
-            show(mActivity.getSupportFragmentManager(), tag);
+            show(manager, tag);
         }
-        
     }
     
     /**
