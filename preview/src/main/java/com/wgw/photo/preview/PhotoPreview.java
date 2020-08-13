@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.ImageView;
 
 import com.wgw.photo.preview.interfaces.ImageLoader;
 import com.wgw.photo.preview.interfaces.OnDismissListener;
@@ -37,38 +38,63 @@ public class PhotoPreview {
         mDialogFragment.setImageLoader(imageLoader);
     }
     
+    /**
+     * 设置图片加载器
+     */
     public void setImageLoader(@NonNull ImageLoader imageLoader) {
         mDialogFragment.setImageLoader(imageLoader);
     }
     
+    /**
+     * 设置图片长按监听
+     */
     public void setLongClickListener(OnLongClickListener longClickListener) {
         mDialogFragment.setLongClickListener(longClickListener);
     }
     
+    /**
+     * 设置预览关闭监听
+     */
     public void setOnDismissListener(OnDismissListener onDismissListener) {
         mDialogFragment.setOnDismissListener(onDismissListener);
     }
     
+    /**
+     * 设置图片数量指示器样式，默认{@link IndicatorType#DOT},如果图片数量超过9，则不论设置何种模式，均为{@link IndicatorType#TEXT}
+     */
     public void setIndicatorType(@IndicatorType int indicatorType) {
         mDialogFragment.setIndicatorType(indicatorType);
     }
     
+    /**
+     * 在调用{@link ImageLoader#onLoadImage(int, Object, ImageView)}时延迟展示loading框的时间，
+     * < 0:不展示，=0:立即显示，>0:延迟给定时间显示，默认延迟100ms显示，如果在此时间内加载完成则不显示，否则显示
+     */
     public void setDelayShowProgressTime(long delayShowProgressTime) {
         mDialogFragment.setDelayShowProgressTime(delayShowProgressTime);
     }
     
+    /**
+     * 设置图片加载框的颜色，默认loading样式为转动的圆圈
+     */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void setProgressColor(int progressColor) {
         mDialogFragment.setProgressColor(progressColor);
     }
     
+    /**
+     * 设置图片加载框Drawable，可指定loading样式，颜色等
+     */
     public void setProgressDrawable(Drawable progressDrawable) {
         mDialogFragment.setProgressDrawable(progressDrawable);
     }
     
     /**
      * @param srcImageContainer 源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
-     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size
+     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size。
+     *                          且保持ITEM内容只有图片最佳，因为在打开和关闭图片预览时，均以ITEM整体视图为源视图进行缩放动画。
+     *                          所以如果不是只有图片内容，那么缩放动画就会发生偏移，此时建议单张单张预览，源视图传ITEM中的ImageView，
+     *                          不建议整体预览
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
@@ -78,7 +104,10 @@ public class PhotoPreview {
     
     /**
      * @param srcImageContainer 源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
-     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size
+     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size。
+     *                          且保持ITEM内容只有图片最佳，因为在打开和关闭图片预览时，均以ITEM整体视图为源视图进行缩放动画。
+     *                          所以如果不是只有图片内容，那么缩放动画就会发生偏移，此时建议单张单张预览，源视图传ITEM中的ImageView，
+     *                          不建议整体预览
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
@@ -87,9 +116,13 @@ public class PhotoPreview {
     }
     
     /**
-     * @param srcImageContainer 源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
-     *                          如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size
-     * @param picUrls           图片Url数据，该数据决定可预览图片的数量
+     * @param srcImageContainer   源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
+     *                            如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size。
+     *                            且保持ITEM内容只有图片最佳，因为在打开和关闭图片预览时，均以ITEM整体视图为源视图进行缩放动画。
+     *                            所以如果不是只有图片内容，那么缩放动画就会发生偏移，此时建议单张单张预览，源视图传ITEM中的ImageView，
+     *                            不建议整体预览
+     * @param defaultShowPosition 如果预览多张照片，此数据默认打开图片位置
+     * @param picUrls             图片Url数据，该数据决定可预览图片的数量
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(@NonNull View srcImageContainer, int defaultShowPosition, @NonNull Object... picUrls) {
@@ -98,9 +131,12 @@ public class PhotoPreview {
     
     /**
      * @param srcImageContainer   源视图，可以是{@link AbsListView}、{@link RecyclerView}或{@link View}，
-     *                            如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size
+     *                            如果是{@link AbsListView}或{@link RecyclerView}，请确保children数量 >= picUrls size。
+     *                            且保持ITEM内容只有图片最佳，因为在打开和关闭图片预览时，均以ITEM整体视图为源视图进行缩放动画。
+     *                            所以如果不是只有图片内容，那么缩放动画就会发生偏移，此时建议单张单张预览，源视图传ITEM中的ImageView，
+     *                            不建议整体预览
+     * @param defaultShowPosition 如果预览多张照片，此数据默认打开图片位置
      * @param picUrls             图片Url数据，该数据决定可预览图片的数量
-     * @param defaultShowPosition 默认展示图片的位置
      */
     @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(@NonNull View srcImageContainer, int defaultShowPosition, @NonNull List<?> picUrls) {

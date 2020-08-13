@@ -2,6 +2,7 @@ package com.wgw.photo.preview;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -111,6 +112,11 @@ public class PreviewDialogFragment extends DialogFragment {
      */
     private Drawable mProgressDrawable;
     
+    /**
+     * 是否添加到Activity
+     */
+    private boolean mAdd;
+    
     public PreviewDialogFragment() {
         setCancelable(false);
     }
@@ -171,7 +177,7 @@ public class PreviewDialogFragment extends DialogFragment {
             initViewData();
         } else {
             // 被回收后恢复，则关闭弹窗
-            dismiss();
+            dismissAllowingStateLoss();
         }
         
         return mRootView;
@@ -225,11 +231,18 @@ public class PreviewDialogFragment extends DialogFragment {
         mCurrentPagerIndex = defaultShowPosition;
         FragmentManager manager = mActivity.getSupportFragmentManager();
         // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
-        if (isAdded() || manager.findFragmentByTag(tag) != null) {
+        if (isAdded() || manager.findFragmentByTag(tag) != null || mAdd) {
             initViewData();
         } else {
+            mAdd = true;
             show(manager, tag);
         }
+    }
+    
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        super.onDismiss(dialog);
+        mAdd = false;
     }
     
     /**
@@ -314,7 +327,6 @@ public class PreviewDialogFragment extends DialogFragment {
         
         mViewPager.setCurrentItem(mCurrentPagerIndex);
     }
-    
     
     /**
      * 准备滑动指示器数据

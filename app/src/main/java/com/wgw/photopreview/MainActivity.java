@@ -20,9 +20,9 @@ import com.wgw.photo.preview.interfaces.ImageLoader;
 
 public class MainActivity extends AppCompatActivity {
     final String[] picData = new String[]{
-        "https://wallpapers.wallhaven.cc/wallpapers/full/wallhaven-704146.jpg",
-        "http://pic1.nipic.com/2008-12-30/200812308231244_2.jpg",
-        "https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=1859156282,3890550903&fm=27&gp=0.jpg",
+        "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1597232069076&di=9adc33f7da408f2c60ec5a40d19f8732&imgtype=0&src=http%3A%2F%2Ft9.baidu.com%2Fit%2Fu%3D583874135%2C70653437%26fm%3D79%26app%3D86%26f%3DJPEG%3Fw%3D3607%26h%3D2408",
+        "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1597232103560&di=d3834a4115d19c23b163b5c25dc5bed2&imgtype=0&src=http%3A%2F%2Fimage.cilacila.com%2Fuploads%2F20190108%2F10%2F1546915052-eADxLaZHCc.jpeg",
+        "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1597232129112&di=9f2110e2e9e50aa1d29e6906c3182df7&imgtype=0&src=http%3A%2F%2Fimg.wezhan.cn%2Fcontent%2Fsitefiles%2F63673%2Fimages%2F6885365_3.jpeg"
     };
     
     @Override

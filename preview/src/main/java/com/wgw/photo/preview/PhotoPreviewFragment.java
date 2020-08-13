@@ -20,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import com.wgw.photo.preview.interfaces.ImageLoader;
@@ -250,10 +251,16 @@ public class PhotoPreviewFragment extends Fragment {
                 @Override
                 public void run() {
                     mPhotoView.setVisibility(View.VISIBLE);
-                    ObjectAnimator scaleXOa = ObjectAnimator.ofFloat(mPhotoView, "scaleX",
-                        mImageSize[0] * 1f / mPhotoView.getWidth(), 1f);
-                    ObjectAnimator scaleYOa = ObjectAnimator.ofFloat(mPhotoView, "scaleY",
-                        mImageSize[1] * 1f / mPhotoView.getHeight(), 1f);
+                    float scaleX = mPhotoView.getWidth() == 0 ? 0 : mImageSize[0] * 1f / mPhotoView.getWidth();
+                    float scaleY = mPhotoView.getHeight() == 0 ? 0 : mImageSize[1] * 1f / mPhotoView.getHeight();
+                    float scale = 0;
+                    if (scaleX > 0 && scaleY > 0) {
+                        Matrix m = new Matrix();
+                        m.postScale(scaleX, scaleY);
+                        scale = mPhotoView.getAttacher().getScale(m);
+                    }
+                    
+                    ObjectAnimator scaleOa = ObjectAnimator.ofFloat(mPhotoView, "scale", scale, 1f);
                     ObjectAnimator xOa = ObjectAnimator.ofFloat(mPhotoView, "translationX",
                         mImageLocation[0] - mPhotoView.getWidth() / 2f, 0f);
                     ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY",
@@ -261,7 +268,7 @@ public class PhotoPreviewFragment extends Fragment {
                     
                     AnimatorSet set = new AnimatorSet();
                     set.setDuration(250);
-                    set.playTogether(scaleXOa, scaleYOa, xOa, yOa);
+                    set.playTogether(scaleOa, xOa, yOa);
                     set.start();
                 }
             });
@@ -310,13 +317,17 @@ public class PhotoPreviewFragment extends Fragment {
     }
     
     private void exit() {
-        Matrix m = new Matrix();
-        m.postScale(((float) mImageSize[0] / mPhotoView.getWidth()), ((float) mImageSize[1] / mPhotoView.getHeight()));
-        ObjectAnimator scaleOa = ObjectAnimator.ofFloat(mPhotoView, "scale",
-            mPhotoView.getAttacher().getScale(m));
+        float[] imageAcSize = getImageActualSize(mPhotoView);
+        float scale = 0;
+        if (imageAcSize[0] > 0 && imageAcSize[1] > 0) {
+            Matrix m = new Matrix();
+            m.postScale((mImageSize[0] * 1f / imageAcSize[0]), (mImageSize[1] * 1f / imageAcSize[1]));
+            scale = mPhotoView.getAttacher().getScale(m);
+        }
+        
+        ObjectAnimator scaleOa = ObjectAnimator.ofFloat(mPhotoView, "scale", scale * mPhotoView.getScale());
         ObjectAnimator xOa = ObjectAnimator.ofFloat(mPhotoView, "translationX",
             mImageLocation[0] - mPhotoView.getWidth() / 2f + mPhotoView.getScrollX());
-        
         ObjectAnimator yOa = ObjectAnimator.ofFloat(mPhotoView, "translationY", getTranslationY());
         
         AnimatorSet set = new AnimatorSet();
@@ -339,6 +350,35 @@ public class PhotoPreviewFragment extends Fragment {
                 }
             }
         }, 250);
+    }
+    
+    /**
+     * 获取ImageView实际绘制的图片大小,如果没有设置图片，则返回数据为0
+     *
+     * @return int[2], 下标0：实际绘制图片的宽度，下标1：实际绘制图片高度
+     */
+    private float[] getImageActualSize(ImageView imageView) {
+        if (imageView == null || imageView.getDrawable() == null) {
+            return new float[2];
+        }
+        
+        //获得ImageView中Image的真实宽高，
+        int dw = imageView.getDrawable().getBounds().width();
+        int dh = imageView.getDrawable().getBounds().height();
+        
+        //获得ImageView中Image的变换矩阵
+        Matrix m = imageView.getImageMatrix();
+        float[] values = new float[9];
+        m.getValues(values);
+        
+        //Image在绘制过程中的变换矩阵，从中获得x和y方向的缩放系数
+        float sx = values[Matrix.MSCALE_X];
+        float sy = values[Matrix.MSCALE_Y];
+        
+        //计算Image在屏幕上实际绘制的宽高
+        float cw = dw * sx;
+        float ch = dh * sy;
+        return new float[]{cw, ch};
     }
     
     private float getTranslationY() {
