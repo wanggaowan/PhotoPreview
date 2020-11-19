@@ -1,5 +1,6 @@
 package com.wgw.photopreview;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -10,6 +11,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -81,11 +84,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         
-        AlertDialog dialog = new AlertDialog.Builder(this)
-            .setView(root)
-            .setCancelable(true)
-            .create();
-        dialog.show();
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(root);
+        dialog.setCanceledOnTouchOutside(true);
         Window window = dialog.getWindow();
         if (window != null) {
             Display defaultDisplay = getWindowManager().getDefaultDisplay();
@@ -97,10 +98,11 @@ public class MainActivity extends AppCompatActivity {
             }
             
             WindowManager.LayoutParams wl = window.getAttributes();
-            wl.width = point.x;
+            wl.width = (int) (point.x * 0.8f);
             wl.height = (int) (point.y * 0.8f);
             window.setAttributes(wl);
         }
+        dialog.show();
     }
     
     private void loadView(String url, ImageView imageView) {

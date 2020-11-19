@@ -1,8 +1,12 @@
 版本更新日志
 
+### v1.5
+1. PhotoPreview增加dismiss()、dismiss(boolean callBack)方法
+2. 修复横屏状态下，原始View的x轴坐标计算错误，导致关闭时，预览图缩放时未正确与原图重合Bug
+
 ### v1.4
 1. 优化横屏模式下缩放动画，优化缩放动画缩放比例计算逻辑，使源图和预览图打开和关闭时无缝衔接
-2. 增加标志防止出现PreviewDialogFragment already added异常（是否修复待验证，偶现）
+2. 增加标志防止出现PreviewDialogFragment already added异常
 
 ### v1.2
 修复PreviewDialogFragment already added异常

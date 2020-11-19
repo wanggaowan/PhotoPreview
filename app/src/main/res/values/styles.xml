@@ -8,6 +8,11 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="FullScreen" parent="AppTheme">
+        <!-- Customize your theme here. -->
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
     <style name="AnimDialogScaleInAndOut">
         <item name="android:windowEnterAnimation">@anim/pickerview_dialog_scale_in_zxing</item>
         <item name="android:windowExitAnimation">@anim/pickerview_dialog_scale_out_zxing</item>

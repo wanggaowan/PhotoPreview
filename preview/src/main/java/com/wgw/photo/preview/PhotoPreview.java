@@ -1,6 +1,5 @@
 package com.wgw.photo.preview;
 
-import android.annotation.SuppressLint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
@@ -26,7 +25,7 @@ import java.util.List;
  * @author Created by 汪高皖 on 2019/2/26 0026 16:55
  */
 public class PhotoPreview {
-    private PreviewDialogFragment mDialogFragment;
+    private final PreviewDialogFragment mDialogFragment;
     
     /**
      * @param activity    当前图片预览所处Activity
@@ -97,7 +96,6 @@ public class PhotoPreview {
      *                          不建议整体预览
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
-    @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(View srcImageContainer, @NonNull Object... picUrls) {
         show(srcImageContainer, Arrays.asList(picUrls));
     }
@@ -110,7 +108,6 @@ public class PhotoPreview {
      *                          不建议整体预览
      * @param picUrls           图片Url数据，该数据决定可预览图片的数量
      */
-    @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(View srcImageContainer, @NonNull List<?> picUrls) {
         show(srcImageContainer, 0, picUrls);
     }
@@ -124,7 +121,6 @@ public class PhotoPreview {
      * @param defaultShowPosition 如果预览多张照片，此数据默认打开图片位置
      * @param picUrls             图片Url数据，该数据决定可预览图片的数量
      */
-    @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(@NonNull View srcImageContainer, int defaultShowPosition, @NonNull Object... picUrls) {
         show(srcImageContainer, defaultShowPosition, Arrays.asList(picUrls));
     }
@@ -138,8 +134,23 @@ public class PhotoPreview {
      * @param defaultShowPosition 如果预览多张照片，此数据默认打开图片位置
      * @param picUrls             图片Url数据，该数据决定可预览图片的数量
      */
-    @SuppressLint({"SetTextI18n", "InflateParams"})
     public void show(@NonNull View srcImageContainer, int defaultShowPosition, @NonNull List<?> picUrls) {
         mDialogFragment.show(srcImageContainer, defaultShowPosition, picUrls);
+    }
+    
+    /**
+     * 关闭预览界面
+     */
+    public void dismiss() {
+        mDialogFragment.dismiss(true);
+    }
+    
+    /**
+     * 关闭预览界面
+     *
+     * @param callBack 是否需要执行{@link OnDismissListener}回调
+     */
+    public void dismiss(boolean callBack) {
+        mDialogFragment.dismiss(callBack);
     }
 }

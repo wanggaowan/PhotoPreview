@@ -1,9 +1,14 @@
 package com.wgw.photo.preview;
 
 import android.annotation.SuppressLint;
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.Lifecycle.Event;
+import android.arch.lifecycle.Lifecycle.State;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -12,10 +17,13 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,7 +53,7 @@ import java.util.UUID;
  * @author Created by 汪高皖 on 2019/3/20 0020 17:45
  */
 public class PreviewDialogFragment extends DialogFragment {
-    private String tag = UUID.randomUUID().toString();
+    private final String tag = UUID.randomUUID().toString();
     private Context mContext;
     
     private RelativeLayout mRootView;
@@ -117,6 +125,21 @@ public class PreviewDialogFragment extends DialogFragment {
      */
     private boolean mAdd;
     
+    /**
+     * 是否已经Dismiss
+     */
+    private boolean mDismiss;
+    
+    /**
+     * 界面关闭时是否需要调用{@link OnDismissListener}
+     */
+    private boolean mCallOnDismissListener = true;
+    
+    /**
+     * 是否在当前界面OnDismiss调用{@link OnDismissListener}
+     */
+    private boolean mCallOnDismissListenerInThisOnDismiss;
+    
     public PreviewDialogFragment() {
         setCancelable(false);
     }
@@ -173,8 +196,10 @@ public class PreviewDialogFragment extends DialogFragment {
             mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot_photo_preview);
             mTvTextIndicator = mRootView.findViewById(R.id.tv_text_indicator_photo_preview);
         }
+        
         if (savedInstanceState == null) {
             initViewData();
+            mDismiss = false;
         } else {
             // 被回收后恢复，则关闭弹窗
             dismissAllowingStateLoss();
@@ -239,10 +264,54 @@ public class PreviewDialogFragment extends DialogFragment {
         }
     }
     
+    /**
+     * 退出预览
+     *
+     * @param callBack 是否需要执行{@link OnDismissListener}回调
+     */
+    public void dismiss(boolean callBack) {
+        if (mDismiss || !getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
+            return;
+        }
+        
+        mCallOnDismissListener = callBack;
+        if (mViewPager == null) {
+            mCallOnDismissListenerInThisOnDismiss = true;
+            dismissAllowingStateLoss();
+        } else {
+            PagerAdapter adapter = mViewPager.getAdapter();
+            if (!(adapter instanceof PhotoPreviewPagerAdapter)) {
+                mCallOnDismissListenerInThisOnDismiss = true;
+                dismissAllowingStateLoss();
+                return;
+            }
+            
+            int position = mViewPager.getCurrentItem();
+            Fragment fragment = ((PhotoPreviewPagerAdapter) adapter).findFragment(mViewPager, position);
+            if (!(fragment instanceof PhotoPreviewFragment)) {
+                mCallOnDismissListenerInThisOnDismiss = true;
+                dismissAllowingStateLoss();
+                return;
+            }
+            
+            boolean exit = ((PhotoPreviewFragment) fragment).exit();
+            if (!exit) {
+                mCallOnDismissListenerInThisOnDismiss = true;
+                dismissAllowingStateLoss();
+            }
+        }
+    }
+    
     @Override
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
         mAdd = false;
+        mDismiss = true;
+        if (mOnDismissListener != null
+            && mCallOnDismissListenerInThisOnDismiss
+            && mCallOnDismissListener) {
+            mOnDismissListener.onDismiss();
+        }
     }
     
     /**
@@ -279,7 +348,7 @@ public class PreviewDialogFragment extends DialogFragment {
                         ((ViewGroup) parent).removeView(mRootView);
                     }
                     
-                    if (mOnDismissListener != null) {
+                    if (mOnDismissListener != null && mCallOnDismissListener) {
                         mOnDismissListener.onDismiss();
                     }
                 }
@@ -319,8 +388,16 @@ public class PreviewDialogFragment extends DialogFragment {
             @Override
             public void onUpdate(PhotoPreviewFragment fragment, int position) {
                 boolean fullScreen = (mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
-                fragment.setData(mImageLoader, position, mPicUrls.get(position), getViewSize(position), getViewLocation(position),
-                    position == mDefaultShowPosition, mDelayShowProgressTime, mProgressColor, mProgressDrawable, fullScreen);
+                fragment.setData(mImageLoader,
+                    mPicUrls.get(position),
+                    mSrcImageContainer,
+                    mDefaultShowPosition,
+                    position,
+                    position == mDefaultShowPosition,
+                    mDelayShowProgressTime,
+                    mProgressColor,
+                    mProgressDrawable,
+                    fullScreen);
                 fragment.setOnLongClickListener(mLongClickListener);
             }
         });
@@ -367,64 +444,5 @@ public class PreviewDialogFragment extends DialogFragment {
             mTvTextIndicator.setVisibility(View.VISIBLE);
             mTvTextIndicator.setText((mCurrentPagerIndex + 1) + "/" + mPicUrls.size());
         }
-    }
-    
-    /**
-     * 获取itemView
-     */
-    @Nullable
-    private View getItemView(int position) {
-        if (!(mSrcImageContainer instanceof ViewGroup)) {
-            return mSrcImageContainer;
-        }
-        
-        if (mSrcImageContainer instanceof AbsListView) {
-            return ((AbsListView) mSrcImageContainer).getChildAt(position);
-        }
-        
-        if (mSrcImageContainer instanceof RecyclerView) {
-            RecyclerView.LayoutManager layoutManager = ((RecyclerView) mSrcImageContainer).getLayoutManager();
-            if (layoutManager == null) {
-                return null;
-            }
-            return layoutManager.findViewByPosition(position);
-        }
-        
-        return null;
-    }
-    
-    /**
-     * 获取指定位置的图片的原始大小
-     */
-    private int[] getViewSize(int position) {
-        int[] result = new int[2];
-        View itemView = getItemView(position);
-        if (itemView == null) {
-            if (position != mDefaultShowPosition) {
-                return getViewSize(mDefaultShowPosition);
-            }
-            return result;
-        }
-        result[0] = itemView.getMeasuredWidth();
-        result[1] = itemView.getMeasuredHeight();
-        return result;
-    }
-    
-    /**
-     * 获取指定位置的图片的原始中心点位置
-     */
-    private int[] getViewLocation(int position) {
-        int[] result = new int[2];
-        View itemView = getItemView(position);
-        if (itemView == null) {
-            if (position != mDefaultShowPosition) {
-                return getViewLocation(mDefaultShowPosition);
-            }
-            return result;
-        }
-        itemView.getLocationOnScreen(result);
-        result[0] += itemView.getMeasuredWidth() / 2;
-        result[1] += itemView.getMeasuredHeight() / 2;
-        return result;
     }
 }
