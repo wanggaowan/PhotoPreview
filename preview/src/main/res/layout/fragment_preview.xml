@@ -5,12 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/black">
 
-    <View
-        android:id="@+id/v_location"
-        android:layout_width="0px"
-        android:layout_height="0px" />
-
-    <com.wgw.photo.preview.photoview.PhotoView
+    <com.wgw.photo.preview.PhotoView
         android:id="@+id/photoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

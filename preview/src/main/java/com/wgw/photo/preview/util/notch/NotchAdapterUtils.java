@@ -1,11 +1,9 @@
 package com.wgw.photo.preview.util.notch;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.view.DisplayCutout;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -15,6 +13,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+
+import androidx.annotation.RequiresApi;
 
 /**
  * 全屏刘海屏适配
@@ -28,15 +28,6 @@ import java.util.List;
  * @author Created by 汪高皖 on 2019/3/12 0012 09:39
  */
 public class NotchAdapterUtils {
-    public static final String TAG = NotchAdapterUtils.class.getSimpleName();
-    
-    public static void adapter(Activity activity, @CutOutMode int cutOutMode) {
-        if (activity == null) {
-            return;
-        }
-        
-        adapter(activity.getWindow(), cutOutMode);
-    }
     
     public static void adapter(Window window, @CutOutMode int cutOutMode) {
         if (window == null) {
@@ -77,9 +68,9 @@ public class NotchAdapterUtils {
             return;
         }
         
-        if (OSUtils.isMiui()) {
+        if (OSUtils.isMIUI()) {
             adapterOWithMIUI(window, cutOutMode);
-        } else if (OSUtils.isEmui()) {
+        } else if (OSUtils.isEMUI()) {
             adapterOWithEMUI(window, cutOutMode);
         }
     }
@@ -87,7 +78,6 @@ public class NotchAdapterUtils {
     /**
      * 适配 MIUI android O系统
      */
-    @SuppressWarnings("JavaReflectionMemberAccess")
     @RequiresApi(api = Build.VERSION_CODES.O)
     private static void adapterOWithMIUI(Window window, @CutOutMode int cutOutMode) {
         if (window == null) {
@@ -130,7 +120,7 @@ public class NotchAdapterUtils {
     /**
      * 适配 EMUI android O系统
      */
-    @SuppressWarnings({"JavaReflectionMemberAccess", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @RequiresApi(api = Build.VERSION_CODES.O)
     private static void adapterOWithEMUI(Window window, @CutOutMode int cutOutMode) {
         if (window == null) {
@@ -154,7 +144,9 @@ public class NotchAdapterUtils {
         
         WindowManager.LayoutParams layoutParams = window.getAttributes();
         try {
+            //noinspection rawtypes
             Class layoutParamsExCls = Class.forName("com.huawei.android.view.LayoutParamsEx");
+            //noinspection rawtypes
             Constructor con = layoutParamsExCls.getConstructor(WindowManager.LayoutParams.class);
             Object layoutParamsExObj = con.newInstance(layoutParams);
             Method method = layoutParamsExCls.getMethod(methodName, int.class);
@@ -184,20 +176,19 @@ public class NotchAdapterUtils {
                 }
             }
             return isNotchScreen;
-        } else if (OSUtils.isMiui()) {
+        } else if (OSUtils.isMIUI()) {
             return isNotchOnMIUI();
-        } else if (OSUtils.isEmui()) {
+        } else if (OSUtils.isEMUI()) {
             return isNotchOnEMUI(window.getContext());
-        } else if (OSUtils.isVivo()) {
+        } else if (OSUtils.isVIVO()) {
             return isNotchOnVIVO(window.getContext());
-        } else if (OSUtils.isOppo()) {
+        } else if (OSUtils.isOPPO()) {
             return isNotchOnOPPO(window.getContext());
         } else {
             return false;
         }
     }
     
-    @SuppressWarnings("unchecked")
     public static boolean isNotchOnMIUI() {
         return "1".equals(OSUtils.getProp("ro.miui.notch"));
     }
@@ -211,6 +202,7 @@ public class NotchAdapterUtils {
         boolean isNotch = false;
         try {
             ClassLoader cl = context.getClassLoader();
+            //noinspection rawtypes
             Class HwNotchSizeUtil = cl.loadClass("com.huawei.android.util.HwNotchSizeUtil");
             Method get = HwNotchSizeUtil.getMethod("hasNotchOnHuawei");
             isNotch = (boolean) get.invoke(HwNotchSizeUtil);
@@ -237,6 +229,7 @@ public class NotchAdapterUtils {
         boolean isNotch = false;
         try {
             ClassLoader classLoader = context.getClassLoader();
+            //noinspection rawtypes
             @SuppressLint("PrivateApi")
             Class FtFeature = classLoader.loadClass("android.util.FtFeature");
             Method method = FtFeature.getMethod("isFeatureSupport", int.class);
@@ -255,7 +248,7 @@ public class NotchAdapterUtils {
         if (context == null) {
             return false;
         }
-    
+        
         return context.getPackageManager()
             .hasSystemFeature("com.oppo.feature.screen.heteromorphism");
     }

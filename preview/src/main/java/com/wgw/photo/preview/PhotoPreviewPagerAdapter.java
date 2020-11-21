@@ -1,29 +1,34 @@
 package com.wgw.photo.preview;
 
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.view.ViewPager;
 import android.view.ViewGroup;
+
+import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 /**
  * 图片预览界面Adapter
  *
- * @author Created by 汪高皖 on 2019/2/28 0028 11:22
+ * @author Created by wanggaowan on 2019/2/28 0028 11:22
  */
-public class PhotoPreviewPagerAdapter extends BaseFragmentPagerAdapter {
+public class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
     
-    private final FragmentManager mFragmentManager;
-    private int size;
+    final FragmentManager mFragmentManager;
+    private final List<Object> mSources;
     private OnUpdateFragmentDataListener mOnUpdateFragmentDataListener;
     private PhotoPreviewFragment.OnExitListener mFragmentOnExitListener;
     
-    public PhotoPreviewPagerAdapter(FragmentManager fm, int size) {
-        super(fm);
-        this.size = size;
+    public PhotoPreviewPagerAdapter(FragmentManager fm, List<Object> sources) {
+        super(fm, FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+        mSources = sources;
         mFragmentManager = fm;
     }
     
+    @NonNull
     @Override
     public Fragment getItem(int position) {
         PhotoPreviewFragment fragment = new PhotoPreviewFragment();
@@ -44,13 +49,17 @@ public class PhotoPreviewPagerAdapter extends BaseFragmentPagerAdapter {
     }
     
     @Override
-    public boolean dataIsChange(Object object) {
-        return true;
+    public int getCount() {
+        return mSources == null ? 0 : mSources.size();
     }
     
     @Override
-    public int getCount() {
-        return size;
+    public int getItemPosition(@NonNull Object object) {
+        return POSITION_NONE;
+    }
+    
+    private static String makeFragmentName(int viewId, long id) {
+        return "android:switcher:" + viewId + ":" + id;
     }
     
     /**
@@ -67,11 +76,6 @@ public class PhotoPreviewPagerAdapter extends BaseFragmentPagerAdapter {
     
     public void setFragmentOnExitListener(PhotoPreviewFragment.OnExitListener fragmentOnExitListener) {
         mFragmentOnExitListener = fragmentOnExitListener;
-    }
-    
-    public void setData(int size) {
-        this.size = size;
-        notifyDataSetChanged();
     }
     
     /**

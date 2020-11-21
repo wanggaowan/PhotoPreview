@@ -1,5 +1,11 @@
 版本更新日志
 
+### v2.0
+1. 适配AndroidX
+2. 提供链式调用
+3. 优化预览过渡动画，适配大部分机型，常用使用场景
+4. 移除内嵌PhotoView，采用依赖方式
+
 ### v1.5
 1. PhotoPreview增加dismiss()、dismiss(boolean callBack)方法
 2. 修复横屏状态下，原始View的x轴坐标计算错误，导致关闭时，预览图缩放时未正确与原图重合Bug

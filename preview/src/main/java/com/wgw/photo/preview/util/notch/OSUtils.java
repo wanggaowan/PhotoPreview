@@ -8,9 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-@SuppressWarnings("WeakerAccess")
 public class OSUtils {
-    private static final String TAG = OSUtils.class.getSimpleName();
     
     public static final String ROM_MIUI = "MIUI";
     public static final String ROM_EMUI = "EMUI";
@@ -18,7 +16,6 @@ public class OSUtils {
     public static final String ROM_OPPO = "OPPO";
     public static final String ROM_SMARTISAN = "SMARTISAN";
     public static final String ROM_VIVO = "VIVO";
-    public static final String ROM_QIKU = "QIKU";
     
     private static final String KEY_VERSION_MIUI = "ro.miui.ui.version.name";
     private static final String KEY_VERSION_EMUI = "ro.build.version.emui";
@@ -29,32 +26,20 @@ public class OSUtils {
     private static String sName;
     private static String sVersion;
     
-    public static boolean isEmui() {
+    public static boolean isEMUI() {
         return check(ROM_EMUI);
     }
     
-    public static boolean isMiui() {
+    public static boolean isMIUI() {
         return check(ROM_MIUI);
     }
     
-    public static boolean isVivo() {
+    public static boolean isVIVO() {
         return check(ROM_VIVO);
     }
     
-    public static boolean isOppo() {
+    public static boolean isOPPO() {
         return check(ROM_OPPO);
-    }
-    
-    public static boolean isFlyme() {
-        return check(ROM_FLYME);
-    }
-    
-    public static boolean is360() {
-        return check(ROM_QIKU) || check("360");
-    }
-    
-    public static boolean isSmartisan() {
-        return check(ROM_SMARTISAN);
     }
     
     public static String getName() {
@@ -99,7 +84,7 @@ public class OSUtils {
     }
     
     public static String getProp(String name) {
-        String line = null;
+        String line;
         BufferedReader input = null;
         try {
             Process p = Runtime.getRuntime().exec("getprop " + name);

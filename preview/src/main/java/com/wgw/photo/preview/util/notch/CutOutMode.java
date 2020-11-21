@@ -1,9 +1,9 @@
 package com.wgw.photo.preview.util.notch;
 
-import android.support.annotation.IntDef;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
+
+import androidx.annotation.IntDef;
 
 /**
  * 刘海屏全屏适配方案

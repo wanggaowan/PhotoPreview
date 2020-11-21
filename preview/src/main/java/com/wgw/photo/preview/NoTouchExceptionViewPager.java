@@ -1,16 +1,20 @@
 package com.wgw.photo.preview;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
+import com.github.chrisbanes.photoview.PhotoView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.viewpager.widget.ViewPager;
+
 /**
- * 没有触摸异常
+ * 捕获触摸异常,主要是{@link PhotoView}与Viewpager结合使用有bug，目前作者未修复，给出捕获异常解决方案
  *
- * @author Created by 汪高皖 on 2019/2/28 0028 11:44
+ * @author Created by wanggaowan on 2019/2/28 0028 11:44
  */
 public class NoTouchExceptionViewPager extends ViewPager {
     public NoTouchExceptionViewPager(@NonNull Context context) {
@@ -40,6 +44,7 @@ public class NoTouchExceptionViewPager extends ViewPager {
         
     }
     
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         try {

@@ -1,0 +1,25 @@
+/*定义依赖库和版本*/
+
+def versions = [:]
+versions.minSdkVersion = 14
+versions.targetSdkVersion = 30
+versions.compileSdkVersion = 28
+ext.versions = versions
+
+def deps = [:]
+deps.appcompat = 'androidx.appcompat:appcompat:1.2.0'
+deps.constraintlayout = 'androidx.constraintlayout:constraintlayout:2.0.4'
+deps.junit = 'junit:junit:4.12'
+deps.junitext = 'androidx.test.ext:junit:1.1.2'
+deps.espresso = 'androidx.test.espresso:espresso-core:3.3.0'
+deps.glide = 'com.github.bumptech.glide:glide:4.9.0'
+deps.glidecompiler = 'com.github.bumptech.glide:compiler:4.9.0'
+deps.rvadapterhelper = 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.50'
+deps.recyclerview = 'androidx.recyclerview:recyclerview:1.1.0'
+deps.leakcanary = 'com.squareup.leakcanary:leakcanary-android:1.6.3'
+deps.leakcanaryrelease = 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.3'
+deps.photoview = 'com.github.chrisbanes:PhotoView:2.3.0'
+// 沉浸式状态栏
+deps.immersionbar = 'com.gyf.immersionbar:immersionbar:3.0.0'
+ext.deps = deps
+

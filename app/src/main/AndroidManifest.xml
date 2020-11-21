@@ -16,6 +16,18 @@
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
+            android:name=".Main7Activity"
+            android:theme="@style/FullScreen" />
+
+        <activity
+            android:name=".Main6Activity"
+            android:theme="@style/FullScreen" />
+
+        <activity android:name=".Main5Activity" />
+
+        <activity android:name=".Main4Activity" />
+
+        <activity
             android:name=".Main3Activity"
             android:theme="@style/FullScreen" />
 
