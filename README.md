@@ -17,8 +17,6 @@
 
 <img src="./screenshot.jpg" width="360px" height="976px">
 
-<!-- ![](./screenshot.jpg){:height="960px" width="540px"} -->
-
 #### 引入
 
 1. 添加 JitPack repository 到你的 build 文件
@@ -44,7 +42,7 @@
 
 ```java
 PhotoPreview
-   .with(MainActivity.this)
+   .with(activity)
    .sources(url)
    .imageLoader((position, source, imageView) -> {
        Glide.with(imageView.getContext())
@@ -68,7 +66,7 @@ PhotoPreview
 
 ```java
 PhotoPreview
-   .with(MainActivity.this)
+   .with(activity)
    .sources(url)
    .build()
    .show(thumbnailView); // 指定缩略图
@@ -96,11 +94,10 @@ PhotoPreview
 
 预览库采用一个Activity持有一个对象，因此如果需要关闭预览，可以不用单独记录PhotoPreview对象,在同一个Activity中，采用如下方式即可
 ```java
-PhotoPreview.with(this).build().dismiss();
+PhotoPreview.with(activity).build().dismiss();
 ```
 
-
-此库参考 [PhotoViewer](https://github.com/wanglu1209/PhotoViewer)，并在此基础上做了修改，修复内存泄漏问题，优化动画,现在打开关闭更加流畅。
+此库灵感来源 [PhotoViewer](https://github.com/wanglu1209/PhotoViewer)
 
 #### **Proguard**
 
