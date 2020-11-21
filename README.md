@@ -77,13 +77,13 @@ PhotoPreview
 PhotoPreview
     .with(activity) // 打开预览的界面
     .imageLoader(imageLoader) // 图片加载器
-    .indicatorType(IndicatorType.DOT) // 图片指示器类型(目前只有圆和文本)，预览>=2张图片时有效
+    .indicatorType(IndicatorType.DOT) // 图片指示器类型(目前只有圆点和文本)，预览>=2张图片时有效
     .selectIndicatorColor(selectColor) // 指示当前预览界面指示器颜色
     .normalIndicatorColor(normalColor) // 非当前预览界面指示器颜色
-    .progressDrawable(drawable) // 图片加载loading drawable，用imageLoader之前显示
+    .progressDrawable(drawable) // 图片加载loading drawable，用于imageLoader加载图片之前显示
     .progressColor(color) // 图片加载loading color, android5.0(含)之后有效
     .delayShowProgressTime(delay) // 图片加载loading延迟展示时间，<0:不展示，=0:立即显示，>0:延迟给定时间显示
-    .fullScreen(true) // 是否全屏预览，如果设置为null则采用跟随模式(预界面是否全屏看打开预览的界面是否全屏)
+    .fullScreen(true) // 是否全屏预览，如果设置为null则采用跟随模式(预览界面是否全屏显示看打开预览的界面是否全屏)
     .defaultShowPosition(0) // 默认预览的图片位置，用于多图预览
     .sources(urls) // 设置图片数据，有sources(Object...)和source(List)两个重载
     .onLongClickListener(listener) // 设置图片长按监听
