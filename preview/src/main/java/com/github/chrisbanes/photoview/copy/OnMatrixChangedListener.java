@@ -1,4 +1,4 @@
-package com.github.chrisbanes.photoview;
+package com.github.chrisbanes.photoview.copy;
 
 import android.graphics.RectF;
 

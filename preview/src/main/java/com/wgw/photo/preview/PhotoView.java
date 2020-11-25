@@ -14,9 +14,9 @@ import android.view.ViewConfiguration;
 import android.view.ViewParent;
 import android.widget.Scroller;
 
-import com.github.chrisbanes.photoview.OnScaleChangedListener;
-import com.github.chrisbanes.photoview.OnViewDragListener;
-import com.github.chrisbanes.photoview.PhotoViewAttacher;
+import com.github.chrisbanes.photoview.copy.OnScaleChangedListener;
+import com.github.chrisbanes.photoview.copy.OnViewDragListener;
+import com.github.chrisbanes.photoview.copy.PhotoViewAttacher;
 
 
 /**
@@ -25,7 +25,7 @@ import com.github.chrisbanes.photoview.PhotoViewAttacher;
  *
  * @author Created by wanggaowan on 11/19/20 11:23 PM
  */
-class PhotoView extends com.github.chrisbanes.photoview.PhotoView implements OnScaleChangedListener, OnViewDragListener {
+class PhotoView extends com.github.chrisbanes.photoview.copy.PhotoView implements OnScaleChangedListener, OnViewDragListener {
     
     private static final int RESET_ANIM_TIME = 100;
     
