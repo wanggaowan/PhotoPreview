@@ -17,7 +17,11 @@
 
 建议下载[demoApk](./app-debug.apk)查看
 
-<img src="./screenshot.jpg" width="360px" height="1265px">
+|  <img src="./screenshot/example.gif" width="358px" height="688px">   | <img src="./screenshot/example2.gif" width="358px" height="688px">  |
+|  ----  | ----  |
+
+
+
 
 #### 引入
 
