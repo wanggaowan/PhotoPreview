@@ -10,7 +10,9 @@
  此时会有顿挫感。因此建议采用沉浸式模式或使用跟随模式预览图片(预览界面是否全屏看打开预览的界面是否全屏)。推荐一个实现沉浸式的库[ImmersionBar](https://github.com/gyf-dev/ImmersionBar)
 
 
-[项目 github 地址](https://github.com/wanggaowan/PhotoPreview)
+[github地址](https://github.com/wanggaowan/PhotoPreview)
+
+[国内gitee地址](https://gitee.com/wanggaowan/PhotoPreview)
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![](https://jitpack.io/v/wanggaowan/PhotoPreview.svg)](https://jitpack.io/#wanggaowan/PhotoPreview)
@@ -23,7 +25,7 @@
 
 
 
-#### 引入
+## 引入
 
 1. 添加 JitPack repository 到你的 build 文件
 
@@ -42,7 +44,7 @@
    }
    ```
 
-# Usage：
+## Usage：
 
 预览单张照片
 
@@ -113,18 +115,18 @@ PhotoPreview.with(activity).build().dismiss();
 使用占位图进行过渡时，当动画结束后，会有一个模糊到清晰的闪屏，特别是占位图和预览图清晰度相差很大时或完全不是同一张照片的情况下。如果要处理失败后显示的
 情况，可以使用errorDrawable。
 
-**感谢**
+## **感谢**
 
 此库灵感来源 [PhotoViewer](https://github.com/wanglu1209/PhotoViewer)
 
 动画优化参考 [XPopup](https://github.com/li-xiaojun/XPopup)
 
 
-#### **Proguard**
+## **Proguard**
 
 无需添加任何混淆规则，可直接混淆
 
-#### ***License***
+## ***License***
 
 PhotoPreview is released under the Apache 2.0 license.
 
