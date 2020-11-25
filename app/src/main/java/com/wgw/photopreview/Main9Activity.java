@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.widget.ImageView.ScaleType;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.target.Target;
 import com.wgw.photo.preview.IndicatorType;
 import com.wgw.photo.preview.PhotoPreview;
 
@@ -14,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class Main2Activity extends AppCompatActivity {
+public class Main9Activity extends AppCompatActivity {
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,18 +27,18 @@ public class Main2Activity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         
         adapter.setOnItemClickListener((adapter1, view, position) -> {
-            PhotoPreview.with(Main2Activity.this)
+            PhotoPreview.with(Main9Activity.this)
                 .indicatorType(IndicatorType.DOT)
                 .selectIndicatorColor(0xffEE3E3E)
                 .normalIndicatorColor(0xff3954A0)
                 .delayShowProgressTime(200)
                 .imageLoader((position1, url, imageView1) ->
-                    Glide.with(Main2Activity.this)
+                    Glide.with(Main9Activity.this)
                         .load(((String) url))
-                        .override(Target.SIZE_ORIGINAL)
                         .into(imageView1))
                 .sources(Arrays.asList(MainActivity.picDataMore))
                 .defaultShowPosition(position)
+                .animDuration(0L)
                 .build()
                 .show(position1 -> layoutManager.findViewByPosition(position1).findViewById(R.id.itemIv));
         });

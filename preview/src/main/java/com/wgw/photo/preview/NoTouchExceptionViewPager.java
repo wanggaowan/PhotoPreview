@@ -16,7 +16,10 @@ import androidx.viewpager.widget.ViewPager;
  *
  * @author Created by wanggaowan on 2019/2/28 0028 11:44
  */
-public class NoTouchExceptionViewPager extends ViewPager {
+class NoTouchExceptionViewPager extends ViewPager {
+    
+    private boolean mTouchEnable;
+    
     public NoTouchExceptionViewPager(@NonNull Context context) {
         super(context);
     }
@@ -28,6 +31,10 @@ public class NoTouchExceptionViewPager extends ViewPager {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         try {
+            if (!mTouchEnable) {
+                return false;
+            }
+            
             return super.dispatchTouchEvent(ev);
         } catch (Exception e) {
             return false;
@@ -41,16 +48,23 @@ public class NoTouchExceptionViewPager extends ViewPager {
         } catch (Exception e) {
             return false;
         }
-        
     }
     
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         try {
+            if (ev.getPointerCount() > 1) {
+                return false;
+            }
+            
             return super.onTouchEvent(ev);
         } catch (Exception e) {
             return false;
         }
+    }
+    
+    public void setTouchEnable(boolean touchEnable) {
+        mTouchEnable = touchEnable;
     }
 }

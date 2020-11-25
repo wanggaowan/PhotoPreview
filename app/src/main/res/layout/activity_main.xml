@@ -13,7 +13,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="预览界面跟随打开预览的界面（展示小图的界面）显示，小图界面如果全屏则全屏，反之亦然"
+            android:text="预览界面跟随打开预览的界面（展示小图的界面）显示，小图界面如果全屏则全屏，反之亦然。预览图片加载原图，缩略图缩放类型为ScaleType.CENTER_CROP，其它示例预览图加载的都非原图"
             android:textColor="@color/black"
             android:textSize="16sp" />
 
@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="fragment中打开预览，activity中内嵌fragment，activity全屏显示"
+            android:text="fragment中打开预览，activity中内嵌fragment，activity全屏显示。缩略图缩放类型为ScaleType.CENTER"
             android:textColor="@color/black"
             android:textSize="16sp" />
 
@@ -44,7 +44,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="Dialog中打开预览，Dialog由当前界面弹出，预览跟随当前界面"
+            android:text="Dialog中打开预览，Dialog由当前界面弹出，预览跟随当前界面。缩略图不指定缩放类型，使用默认"
             android:textColor="@color/black"
             android:textSize="16sp" />
 
@@ -59,7 +59,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="Activity中打开预览，Activity非全屏，非沉浸式模式，预览界面全屏，此时退出预览过度动画结束有顿挫感，主要由于状态栏显示不及时导致，因此建议采用沉浸式模式"
+            android:text="Activity中打开预览，Activity非全屏，非沉浸式模式，预览界面全屏，此时退出预览过度动画结束有顿挫感，主要由于状态栏显示不及时导致，因此建议采用沉浸式模式。缩略图缩放类型为ScaleType.CENTER_INSIDE"
             android:textColor="@color/black"
             android:textSize="20sp" />
 
@@ -74,7 +74,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="Activity中打开预览，Activity非全屏，沉浸式模式，预览界面全屏，此时退出无顿挫感"
+            android:text="Activity中打开预览，Activity非全屏，沉浸式模式，预览界面全屏，此时退出无顿挫感。缩略图缩放类型为ScaleType.FIT_CENTER"
             android:textColor="@color/black"
             android:textSize="20sp" />
 
@@ -89,7 +89,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="Activity中打开预览，Activity全屏，非沉浸式模式，预览界面非全屏，此时退出无顿挫感"
+            android:text="Activity中打开预览，Activity全屏，非沉浸式模式，预览界面非全屏，此时退出无顿挫感。缩略图缩放类型为ScaleType.FIT_XY"
             android:textColor="@color/black"
             android:textSize="20sp" />
 
@@ -104,7 +104,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:gravity="center_horizontal"
-            android:text="Activity中打开预览，Activity全屏，沉浸式模式，预览界面非全屏，此时退出无顿挫感"
+            android:text="Activity中打开预览，Activity全屏，沉浸式模式，预览界面非全屏，此时退出无顿挫感.缩略图缩放类型为ScaleType.FIT_START"
             android:textColor="@color/black"
             android:textSize="20sp" />
 
@@ -113,6 +113,28 @@
             android:layout_height="60dp"
             android:onClick="goMain7Activity"
             android:text="指定预览模式4-非全屏" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_horizontal"
+            android:text="展示缩略图指定ImageView和非ImageView时打开和关闭预览图的差异"
+            android:textColor="@color/black"
+            android:textSize="20sp" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:onClick="goMain8Activity"
+            android:text="预览差异对比" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="10dp"
+            android:onClick="goMain9Activity"
+            android:text="预览无动画" />
     </LinearLayout>
 
 </ScrollView>

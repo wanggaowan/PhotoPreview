@@ -1,27 +1,44 @@
 package com.wgw.photo.preview;
 
-import android.animation.ValueAnimator;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
+import android.view.ViewParent;
 import android.widget.Scroller;
 
 import com.github.chrisbanes.photoview.OnScaleChangedListener;
 import com.github.chrisbanes.photoview.OnViewDragListener;
 import com.github.chrisbanes.photoview.PhotoViewAttacher;
 
+
 /**
  * A zoomable ImageView. See {@link PhotoViewAttacher} for most of the details on how the zooming
  * is accomplished.<br>
  *
- * add {@link #smoothResetPosition()} method
- *
  * @author Created by wanggaowan on 11/19/20 11:23 PM
  */
-public class PhotoView extends com.github.chrisbanes.photoview.PhotoView implements OnScaleChangedListener, OnViewDragListener {
+class PhotoView extends com.github.chrisbanes.photoview.PhotoView implements OnScaleChangedListener, OnViewDragListener {
+    
+    private static final int RESET_ANIM_TIME = 100;
     
     private final Scroller mScroller;
     private PhotoPreviewFragment mPhotoPreviewFragment;
+    private ImageChangeListener mImageChangeListener;
+    private DrawEndListener mDrawEndListener;
+    private final ViewConfiguration mViewConfiguration;
+    
+    private boolean mDrawableChange = true;
+    // 向下拖动触发
+    private boolean mBottomDragging;
+    private boolean mBgAnimStart;
     
     // 透明度
     private int mIntAlpha = 255;
@@ -36,13 +53,21 @@ public class PhotoView extends com.github.chrisbanes.photoview.PhotoView impleme
     
     public PhotoView(Context context, AttributeSet attr, int defStyle) {
         super(context, attr, defStyle);
-        // 默认要设置最小缩放倍率为0，因为打开和关闭预览的时候，缩放倍率小于默认定义的1
-        // 如果不设置最小比例比1小，则PhotoViewAttacher setScale将抛出异常
-        setMinimumScale(0);
         setOnScaleChangeListener(this);
         setOnViewDragListener(this);
         mScroller = new Scroller(context);
-        
+        mViewConfiguration = ViewConfiguration.get(context);
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (mDrawableChange) {
+            mDrawableChange = false;
+            if (mDrawEndListener != null) {
+                mDrawEndListener.onEnd();
+            }
+        }
     }
     
     @Override
@@ -56,65 +81,75 @@ public class PhotoView extends com.github.chrisbanes.photoview.PhotoView impleme
     
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        boolean touchEvent = super.dispatchTouchEvent(event);
         switch (event.getAction()) {
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 onFingerUp();
                 break;
         }
-        return touchEvent;
+        
+        return super.dispatchTouchEvent(event);
     }
     
     private void onFingerUp() {
+        mBottomDragging = false;
         if (getScale() > 1) {
             return;
         }
         
         // 这里恢复位置和透明度
-        if (mIntAlpha < 255 * 0.6) {
+        if (mIntAlpha != 255 && getScale() < 0.8) {
             mPhotoPreviewFragment.exit();
         } else {
-            ValueAnimator va = ValueAnimator.ofFloat(getScale(), 1f);
-            ValueAnimator bgVa = ValueAnimator.ofInt(mIntAlpha, 255);
-            va.setDuration(200);
-            bgVa.setDuration(200);
-            va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    setScale((Float) animation.getAnimatedValue());
-                }
-            });
-            
-            bgVa.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    mPhotoPreviewFragment.mRoot.getBackground().setAlpha((Integer) animation.getAnimatedValue());
-                }
-            });
-            va.start();
-            bgVa.start();
-            smoothResetPosition();
+            reset();
         }
-        
+    }
+    
+    private void reset() {
         mIntAlpha = 255;
+        mBgAnimStart = true;
+        mPhotoPreviewFragment.doViewBgAnim(Color.BLACK, RESET_ANIM_TIME, new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mBgAnimStart = false;
+            }
+        });
+        
+        mScroller.startScroll(
+            getScrollX(),
+            getScrollY(),
+            -getScrollX(),
+            -getScrollY(), RESET_ANIM_TIME
+        );
+        invalidate();
     }
     
     @Override
     public void onScaleChange(float scaleFactor, float focusX, float focusY) {
-        if (getScale() >= getAttacher().getMediumScale()) {
-            setMinimumScale(1);
-        } else {
-            setMinimumScale(0);
-        }
+    
     }
     
     @Override
     public void onDrag(float dx, float dy) {
-        if (getScale() > 1) {
+        boolean intercept = mBgAnimStart
+            || Math.abs(dx) > Math.abs(dy)
+            || Math.sqrt((dx * dx) + (dy * dy)) < mViewConfiguration.getScaledTouchSlop()
+            || getScale() > 1
+            || !hasVisibleDrawable();
+        
+        if (!mBottomDragging && intercept) {
             return;
         }
         
+        if (!mBottomDragging) {
+            // 执行拖拽操作，请求父类不要拦截请求
+            ViewParent parent = getParent();
+            if (parent != null) {
+                parent.requestDisallowInterceptTouchEvent(true);
+            }
+        }
+        
+        mBottomDragging = true;
         float scale = getScale();
         // 移动图像
         scrollBy(((int) -dx), ((int) -dy));
@@ -124,7 +159,7 @@ public class PhotoView extends com.github.chrisbanes.photoview.PhotoView impleme
             mIntAlpha = 255;
         } else {
             scale -= dy * 0.001f;
-            mIntAlpha -= dy * 0.25;
+            mIntAlpha -= dy * 0.03;
         }
         
         if (scale > 1) {
@@ -133,8 +168,8 @@ public class PhotoView extends com.github.chrisbanes.photoview.PhotoView impleme
             scale = 0f;
         }
         
-        if (mIntAlpha < 0) {
-            mIntAlpha = 0;
+        if (mIntAlpha < 200) {
+            mIntAlpha = 200;
         } else if (mIntAlpha > 255) {
             mIntAlpha = 255;
         }
@@ -147,24 +182,91 @@ public class PhotoView extends com.github.chrisbanes.photoview.PhotoView impleme
     }
     
     /**
-     * smooth reset view position to default position
+     * 是否存在可观察的图像
      */
-    public void smoothResetPosition() {
-        mScroller.startScroll(
-            getScrollX(),
-            getScrollY(),
-            -getScrollX(),
-            -getScrollY(), 200
-        );
-        invalidate();
-    }
-    
-    public void setPhotoPreviewFragment(PhotoPreviewFragment photoPreviewFragment) {
-        mPhotoPreviewFragment = photoPreviewFragment;
+    private boolean hasVisibleDrawable() {
+        if (getDrawable() == null) {
+            return false;
+        }
+        
+        Drawable drawable = getDrawable();
+        // 获得ImageView中Image的真实宽高，
+        int dw = drawable.getBounds().width();
+        int dh = drawable.getBounds().height();
+        return dw > 0 && dh > 0;
     }
     
     @Override
     public float getAlpha() {
         return mIntAlpha;
+    }
+    
+    @Override
+    public void setImageDrawable(Drawable drawable) {
+        super.setImageDrawable(drawable);
+        mDrawableChange = true;
+        if (mImageChangeListener != null) {
+            mImageChangeListener.onChange(getDrawable());
+        }
+    }
+    
+    @Override
+    public void setImageResource(int resId) {
+        super.setImageResource(resId);
+        mDrawableChange = true;
+        if (mImageChangeListener != null) {
+            mImageChangeListener.onChange(getDrawable());
+        }
+    }
+    
+    @Override
+    public void setImageURI(Uri uri) {
+        super.setImageURI(uri);
+        mDrawableChange = true;
+        if (mImageChangeListener != null) {
+            mImageChangeListener.onChange(getDrawable());
+        }
+    }
+    
+    @Override
+    public void setImageBitmap(Bitmap bm) {
+        super.setImageBitmap(bm);
+        mDrawableChange = true;
+        if (mImageChangeListener != null) {
+            mImageChangeListener.onChange(getDrawable());
+        }
+    }
+    
+    void setPhotoPreviewFragment(PhotoPreviewFragment photoPreviewFragment) {
+        mPhotoPreviewFragment = photoPreviewFragment;
+    }
+    
+    void setImageChangeListener(ImageChangeListener listener) {
+        mImageChangeListener = listener;
+    }
+    
+    void setDrawEndListener(DrawEndListener listener) {
+        mDrawEndListener = listener;
+    }
+    
+    /**
+     * 设置的图片发生更改
+     */
+    interface ImageChangeListener {
+        
+        /**
+         * 图片发生更改，但是此时并不一定绘制到界面
+         */
+        void onChange(Drawable drawable);
+    }
+    
+    /**
+     * 图片绘制完成
+     */
+    interface DrawEndListener {
+        /**
+         * 图片绘制完成,只在图片发生变更后的第一次绘制时回调
+         */
+        void onEnd();
     }
 }

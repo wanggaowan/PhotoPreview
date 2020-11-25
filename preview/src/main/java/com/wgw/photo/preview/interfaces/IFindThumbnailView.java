@@ -9,7 +9,7 @@ import android.view.View;
  */
 public interface IFindThumbnailView {
     /**
-     * 返回对象用于打开和关闭过度动画
+     * 查找指定位置缩略图
      *
      * @param position 预览位置
      * @return 预览图对应的缩略图控件

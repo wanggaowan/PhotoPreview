@@ -1,5 +1,6 @@
 package com.wgw.photo.preview.interfaces;
 
+import android.view.View;
 import android.widget.FrameLayout;
 
 /**
@@ -9,7 +10,9 @@ import android.widget.FrameLayout;
  */
 public interface OnLongClickListener {
     /**
-     * @param rootView 当前预览图片根布局
+     * 长按，可添加自定义处理选项，比如保存图片、分享等
+     *
+     * @param rootView 当前预览根布局,默认显示状态为{@link View#GONE}
      */
-    void onLongClick(FrameLayout rootView);
+    boolean onLongClick(FrameLayout rootView);
 }

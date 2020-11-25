@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView.ScaleType;
 
 import com.wgw.photo.preview.IndicatorType;
 import com.wgw.photo.preview.PhotoPreview;
@@ -39,8 +40,9 @@ public class TestFragment extends Fragment {
     }
     
     private void initView(final RecyclerView recyclerView) {
-        recyclerView.setLayoutManager(new GridLayoutManager(mContext, 3));
-        final PhotoAdapter adapter = new PhotoAdapter(Arrays.asList(MainActivity.picDataMore));
+        GridLayoutManager layoutManager = new GridLayoutManager(mContext, 3);
+        recyclerView.setLayoutManager(layoutManager);
+        final PhotoAdapter adapter = new PhotoAdapter(Arrays.asList(MainActivity.picDataMore), ScaleType.CENTER);
         recyclerView.setAdapter(adapter);
         
         adapter.setOnItemClickListener((adapter1, view, position) ->
@@ -52,6 +54,6 @@ public class TestFragment extends Fragment {
                 .sources(Arrays.asList(MainActivity.picDataMore))
                 .defaultShowPosition(position)
                 .build()
-                .show(recyclerView));
+                .show(position1 -> layoutManager.findViewByPosition(position1).findViewById(R.id.itemIv)));
     }
 }

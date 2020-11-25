@@ -1,8 +1,8 @@
 package com.wgw.photo.preview;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.ColorDrawable;
@@ -14,12 +14,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.wgw.photo.preview.interfaces.IFindThumbnailView;
@@ -29,11 +30,12 @@ import com.wgw.photo.preview.util.Utils;
 import com.wgw.photo.preview.util.notch.CutOutMode;
 import com.wgw.photo.preview.util.notch.NotchAdapterUtils;
 
-import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
+import androidx.annotation.RestrictTo.Scope;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
@@ -49,6 +51,7 @@ import androidx.viewpager.widget.ViewPager;
  *
  * @author Created by wanggaowan on 2019/3/20 0020 17:45
  */
+@RestrictTo(Scope.LIBRARY)
 public class PreviewDialogFragment extends DialogFragment {
     
     private static final int VIEW_PAGER_ID = 13679;
@@ -56,18 +59,16 @@ public class PreviewDialogFragment extends DialogFragment {
     private static final int VIEW_PAGER_ID_NEXT = 23679;
     
     private final String tag = UUID.randomUUID().toString();
-    private Context mContext;
     
-    private RelativeLayout mRootView;
-    private ViewPager mViewPager;
+    private FrameLayout mRootView;
+    private NoTouchExceptionViewPager mViewPager;
     private LinearLayout mLlDotIndicator;
     private ImageView mIvSelectDot;
     private TextView mTvTextIndicator;
+    private FrameLayout mLlCustom;
     
-    private FragmentActivity mActivity;
-    private Config mConfig;
-    private View mThumbnailView;
-    private IFindThumbnailView mFindThumbnailView;
+    @Nullable
+    ShareData mShareData;
     private int mCurrentPagerIndex = 0;
     
     /**
@@ -92,12 +93,6 @@ public class PreviewDialogFragment extends DialogFragment {
     
     public PreviewDialogFragment() {
         setCancelable(false);
-    }
-    
-    @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
-        mContext = context;
     }
     
     @Override
@@ -144,15 +139,17 @@ public class PreviewDialogFragment extends DialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         if (mRootView == null) {
-            mRootView = (RelativeLayout) inflater.inflate(R.layout.view_preview_root, null);
+            mRootView = (FrameLayout) inflater.inflate(R.layout.view_preview_root, null);
             mViewPager = mRootView.findViewById(R.id.viewpager);
             mLlDotIndicator = mRootView.findViewById(R.id.ll_dot_indicator_photo_preview);
             mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot_photo_preview);
             mTvTextIndicator = mRootView.findViewById(R.id.tv_text_indicator_photo_preview);
+            mLlCustom = mRootView.findViewById(R.id.fl_custom);
         }
         
         if (savedInstanceState == null) {
             initViewData();
+            initEvent();
             mDismiss = false;
         } else {
             // 被回收后恢复，则关闭弹窗
@@ -163,16 +160,9 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     @Override
-    public void onDismiss(@NonNull DialogInterface dialog) {
-        super.onDismiss(dialog);
-        mAdd = false;
-        mDismiss = true;
-        if (mConfig != null && mConfig.onDismissListener != null
-            && mCallOnDismissListenerInThisOnDismiss
-            && mCallOnDismissListener) {
-            mConfig.onDismissListener.onDismiss();
-        }
-        
+    public void onDetach() {
+        super.onDetach();
+        mLlCustom.removeAllViews();
         if (mRootView != null) {
             ViewParent parent = mRootView.getParent();
             if (parent instanceof ViewGroup) {
@@ -182,40 +172,56 @@ public class PreviewDialogFragment extends DialogFragment {
         }
     }
     
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
+        mAdd = false;
+        mDismiss = true;
+        
+        if (mShareData != null && mShareData.config.onDismissListener != null
+            && mCallOnDismissListenerInThisOnDismiss
+            && mCallOnDismissListener) {
+            mShareData.config.onDismissListener.onDismiss();
+        }
+        mShareData = null;
+    }
+    
     /**
      * 是否全屏显示
      */
     private boolean isFullScreen() {
-        if (mConfig.fullScreen != null) {
-            return mConfig.fullScreen;
+        if (mShareData != null && mShareData.config.fullScreen != null) {
+            return mShareData.config.fullScreen;
+        }
+        
+        FragmentActivity activity = getActivity();
+        if (activity == null || activity.getWindow() == null) {
+            return true;
         }
         
         // 跟随打开预览界面的显示状态
-        return (mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
+        return (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
     }
     
     public void show(FragmentActivity activity, Config config, View thumbnailView) {
-        mActivity = activity;
-        mConfig = config;
-        mThumbnailView = thumbnailView;
-        FragmentManager manager = mActivity.getSupportFragmentManager();
-        // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
-        if (isAdded() || manager.findFragmentByTag(tag) != null || mAdd) {
-            initViewData();
-        } else {
-            mAdd = true;
-            show(manager, tag);
-        }
+        mShareData = new ShareData(config);
+        mShareData.thumbnailView = thumbnailView;
+        showInner(activity);
     }
     
     public void show(FragmentActivity activity, Config config, @NonNull IFindThumbnailView findThumbnailView) {
-        mActivity = activity;
-        mConfig = config;
-        mFindThumbnailView = findThumbnailView;
-        FragmentManager manager = mActivity.getSupportFragmentManager();
+        mShareData = new ShareData(config);
+        mShareData.findThumbnailView = findThumbnailView;
+        showInner(activity);
+    }
+    
+    private void showInner(FragmentActivity activity) {
+        FragmentManager manager = activity.getSupportFragmentManager();
         // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
+        mShareData.showNeedAnim = true;
         if (isAdded() || manager.findFragmentByTag(tag) != null || mAdd) {
             initViewData();
+            initEvent();
         } else {
             mAdd = true;
             show(manager, tag);
@@ -262,12 +268,54 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     private void initViewData() {
-        mCurrentPagerIndex = mConfig.defaultShowPosition;
+        mCurrentPagerIndex = mShareData.config.defaultShowPosition;
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
         prepareIndicator();
         prepareViewPager();
+    }
+    
+    private void initEvent() {
+        mShareData.onOpenListener = new PhotoPreviewFragment.OnOpenListener() {
+            
+            @Override
+            public void onStart() {
+                mViewPager.setTouchEnable(false);
+            }
+            
+            @Override
+            public void onEnd() {
+                mViewPager.setTouchEnable(true);
+            }
+        };
+        
+        mShareData.onExitListener = new PhotoPreviewFragment.OnExitListener() {
+            @Override
+            public void onStart() {
+                mViewPager.setTouchEnable(false);
+                mLlDotIndicator.setVisibility(View.GONE);
+                mIvSelectDot.setVisibility(View.GONE);
+                mTvTextIndicator.setVisibility(View.GONE);
+            }
+            
+            @Override
+            public void onExit() {
+                mViewPager.setTouchEnable(true);
+                OnDismissListener onDismissListener = mShareData.config.onDismissListener;
+                dismissAllowingStateLoss();
+                if (onDismissListener != null && mCallOnDismissListener) {
+                    onDismissListener.onDismiss();
+                }
+            }
+        };
+        
+        mShareData.onLongClickListener = v -> {
+            if (mShareData.config.onLongClickListener != null) {
+                return mShareData.config.onLongClickListener.onLongClick(mLlCustom);
+            }
+            return false;
+        };
     }
     
     /**
@@ -276,31 +324,14 @@ public class PreviewDialogFragment extends DialogFragment {
     private void prepareViewPager() {
         // 每次预览的时候，如果不动态修改每个ViewPager的Id
         // 那么预览多张图片时，如果第一次点击位置1预览然后关闭，再点击位置2，预览图片打开的还是位置1预览图
+        mViewPager.setTouchEnable(false);
         if (mViewPager.getId() == VIEW_PAGER_ID) {
             mViewPager.setId(VIEW_PAGER_ID_NEXT);
         } else {
             mViewPager.setId(VIEW_PAGER_ID);
         }
         
-        List<Object> sources = mConfig.sources;
-        PhotoPreviewPagerAdapter adapter = new PhotoPreviewPagerAdapter(getChildFragmentManager(), sources);
-        adapter.setFragmentOnExitListener(new PhotoPreviewFragment.OnExitListener() {
-            @Override
-            public void onStart() {
-                mLlDotIndicator.setVisibility(View.GONE);
-                mIvSelectDot.setVisibility(View.GONE);
-                mTvTextIndicator.setVisibility(View.GONE);
-            }
-            
-            @Override
-            public void onExit() {
-                dismissAllowingStateLoss();
-                if (mConfig.onDismissListener != null && mCallOnDismissListener) {
-                    mConfig.onDismissListener.onDismiss();
-                }
-            }
-        });
-        
+        PhotoPreviewPagerAdapter adapter = new PhotoPreviewPagerAdapter(getChildFragmentManager(), mShareData.config.sources);
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -325,15 +356,7 @@ public class PreviewDialogFragment extends DialogFragment {
             }
         });
         
-        adapter.setOnUpdateFragmentDataListener(new PhotoPreviewPagerAdapter.OnUpdateFragmentDataListener() {
-            @Override
-            public void onUpdate(PhotoPreviewFragment fragment, int position) {
-                fragment.setData(mConfig,
-                    mThumbnailView,
-                    mFindThumbnailView,
-                    position);
-            }
-        });
+        adapter.setOnUpdateFragmentDataListener(PhotoPreviewFragment :: setPosition);
         
         mViewPager.setAdapter(adapter);
         mViewPager.setCurrentItem(mCurrentPagerIndex);
@@ -343,20 +366,21 @@ public class PreviewDialogFragment extends DialogFragment {
      * 准备滑动指示器数据
      */
     private void prepareIndicator() {
-        int sourceSize = mConfig.sources == null ? 0 : mConfig.sources.size();
-        if (sourceSize >= 2 && sourceSize <= 9 && IndicatorType.DOT == mConfig.indicatorType) {
+        int sourceSize = mShareData.config.sources == null ? 0 : mShareData.config.sources.size();
+        if (sourceSize >= 2 && sourceSize <= mShareData.config.maxIndicatorDot
+            && IndicatorType.DOT == mShareData.config.indicatorType) {
             mLlDotIndicator.removeAllViews();
             
-            if (mConfig.selectIndicatorColor != 0xFFFFFFFF) {
+            if (mShareData.config.selectIndicatorColor != 0xFFFFFFFF) {
                 Drawable drawable = mIvSelectDot.getDrawable();
                 GradientDrawable gradientDrawable;
                 if (drawable instanceof GradientDrawable) {
                     gradientDrawable = (GradientDrawable) drawable;
                 } else {
-                    gradientDrawable = (GradientDrawable) ContextCompat.getDrawable(mContext, R.drawable.selected_dot);
+                    gradientDrawable = (GradientDrawable) ContextCompat.getDrawable(getContext(), R.drawable.selected_dot);
                 }
                 
-                gradientDrawable.setColorFilter(mConfig.selectIndicatorColor, Mode.SRC_OVER);
+                gradientDrawable.setColorFilter(mShareData.config.selectIndicatorColor, Mode.SRC_OVER);
                 mIvSelectDot.setImageDrawable(gradientDrawable);
             }
             
@@ -365,30 +389,29 @@ public class PreviewDialogFragment extends DialogFragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
             
             // 未选中小圆点的间距
-            dotParams.rightMargin = Utils.dp2px(mContext, 12);
+            dotParams.rightMargin = Utils.dp2px(getContext(), 12);
             
             // 创建未选中的小圆点
             for (int i = 0; i < sourceSize; i++) {
-                AppCompatImageView iv = new AppCompatImageView(mContext);
-                GradientDrawable shapeDrawable = (GradientDrawable) ContextCompat.getDrawable(mContext, R.drawable.no_selected_dot);
-                if (mConfig.normalIndicatorColor != 0xFFAAAAAA) {
-                    shapeDrawable.setColorFilter(mConfig.normalIndicatorColor, Mode.SRC_OVER);
+                AppCompatImageView iv = new AppCompatImageView(getContext());
+                GradientDrawable shapeDrawable = (GradientDrawable) ContextCompat.getDrawable(getContext(), R.drawable.no_selected_dot);
+                if (mShareData.config.normalIndicatorColor != 0xFFAAAAAA) {
+                    shapeDrawable.setColorFilter(mShareData.config.normalIndicatorColor, Mode.SRC_OVER);
                 }
                 iv.setImageDrawable(shapeDrawable);
                 iv.setLayoutParams(dotParams);
                 mLlDotIndicator.addView(iv);
             }
             
-            mLlDotIndicator.post(new Runnable() {
-                @Override
-                public void run() {
-                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mIvSelectDot.getLayoutParams();
-                    // 设置选中小圆点的左边距
-                    params.leftMargin = (int) mLlDotIndicator.getChildAt(0).getX();
-                    mIvSelectDot.setTranslationX((dotParams.rightMargin * mCurrentPagerIndex + mLlDotIndicator.
-                        getChildAt(0).getWidth() * mCurrentPagerIndex));
-                    mIvSelectDot.setVisibility(View.VISIBLE);
-                }
+            mLlDotIndicator.post(() -> {
+                View childAt = mLlDotIndicator.getChildAt(0);
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mIvSelectDot.getLayoutParams();
+                // 设置选中小圆点的左边距
+                params.leftMargin = (int) childAt.getX();
+                mIvSelectDot.setLayoutParams(params);
+                float tx = (dotParams.rightMargin * mCurrentPagerIndex + childAt.getWidth() * mCurrentPagerIndex);
+                mIvSelectDot.setTranslationX(tx);
+                mIvSelectDot.setVisibility(View.VISIBLE);
             });
             
             mLlDotIndicator.setVisibility(View.VISIBLE);
@@ -398,13 +421,35 @@ public class PreviewDialogFragment extends DialogFragment {
         }
     }
     
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (mLlDotIndicator.getVisibility() == View.VISIBLE) {
+            mLlDotIndicator.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    mLlDotIndicator.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    
+                    View childAt = mLlDotIndicator.getChildAt(0);
+                    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mIvSelectDot.getLayoutParams();
+                    // 设置选中小圆点的左边距
+                    params.leftMargin = (int) childAt.getX();
+                    mIvSelectDot.setLayoutParams(params);
+                    LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) childAt.getLayoutParams();
+                    float tx = (layoutParams.rightMargin * mCurrentPagerIndex + childAt.getWidth() * mCurrentPagerIndex);
+                    mIvSelectDot.setTranslationX(tx);
+                }
+            });
+        }
+    }
+    
     private void updateTextIndicator() {
-        int sourceSize = mConfig.sources == null ? 0 : mConfig.sources.size();
+        int sourceSize = mShareData.config.sources == null ? 0 : mShareData.config.sources.size();
         SpannableString.Builder.appendMode()
             .addSpan(String.valueOf(mCurrentPagerIndex + 1))
-            .color(mConfig.selectIndicatorColor)
+            .color(mShareData.config.selectIndicatorColor)
             .addSpan(" / " + sourceSize)
-            .color(mConfig.normalIndicatorColor)
+            .color(mShareData.config.normalIndicatorColor)
             .apply(mTvTextIndicator);
     }
 }

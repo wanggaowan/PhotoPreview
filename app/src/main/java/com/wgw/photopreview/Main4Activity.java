@@ -2,6 +2,7 @@ package com.wgw.photopreview;
 
 import android.os.Bundle;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -23,8 +24,9 @@ public class Main4Activity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
         final RecyclerView recyclerView = findViewById(R.id.rv);
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
-        final PhotoAdapter adapter = new PhotoAdapter(Arrays.asList(MainActivity.picDataMore));
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
+        recyclerView.setLayoutManager(layoutManager);
+        final PhotoAdapter adapter = new PhotoAdapter(Arrays.asList(MainActivity.picDataMore), ScaleType.CENTER_INSIDE);
         recyclerView.setAdapter(adapter);
         
         adapter.setOnItemClickListener((adapter1, view, position) -> {
@@ -41,7 +43,7 @@ public class Main4Activity extends AppCompatActivity {
                 .defaultShowPosition(position)
                 .fullScreen(true)
                 .build()
-                .show(recyclerView);
+                .show(position1 -> layoutManager.findViewByPosition(position1).findViewById(R.id.itemIv));
         });
     }
 }

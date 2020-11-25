@@ -15,12 +15,11 @@ import androidx.viewpager.widget.ViewPager;
  *
  * @author Created by wanggaowan on 2019/2/28 0028 11:22
  */
-public class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
+class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
     
-    final FragmentManager mFragmentManager;
+    private final FragmentManager mFragmentManager;
     private final List<Object> mSources;
     private OnUpdateFragmentDataListener mOnUpdateFragmentDataListener;
-    private PhotoPreviewFragment.OnExitListener mFragmentOnExitListener;
     
     public PhotoPreviewPagerAdapter(FragmentManager fm, List<Object> sources) {
         super(fm, FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
@@ -31,9 +30,7 @@ public class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
     @NonNull
     @Override
     public Fragment getItem(int position) {
-        PhotoPreviewFragment fragment = new PhotoPreviewFragment();
-        fragment.setOnExitListener(mFragmentOnExitListener);
-        return fragment;
+        return new PhotoPreviewFragment();
     }
     
     @NonNull
@@ -55,7 +52,11 @@ public class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
     
     @Override
     public int getItemPosition(@NonNull Object object) {
-        return POSITION_NONE;
+        if (getCount() == 0) {
+            return POSITION_NONE;
+        }
+        
+        return POSITION_UNCHANGED;
     }
     
     private static String makeFragmentName(int viewId, long id) {
@@ -72,10 +73,6 @@ public class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
     
     public void setOnUpdateFragmentDataListener(OnUpdateFragmentDataListener onUpdateFragmentDataListener) {
         mOnUpdateFragmentDataListener = onUpdateFragmentDataListener;
-    }
-    
-    public void setFragmentOnExitListener(PhotoPreviewFragment.OnExitListener fragmentOnExitListener) {
-        mFragmentOnExitListener = fragmentOnExitListener;
     }
     
     /**

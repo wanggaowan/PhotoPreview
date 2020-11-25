@@ -36,7 +36,7 @@ dependencies {
     annotationProcessor deps.glidecompiler
     implementation deps.rvadapterhelper
     implementation deps.recyclerview
-    debugImplementation deps.leakcanary
-    releaseImplementation deps.leakcanaryrelease
+    // debugImplementation deps.leakcanary
     implementation deps.immersionbar
+    implementation deps.transition
 }

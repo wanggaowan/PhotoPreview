@@ -3,9 +3,11 @@
 仿微信朋友圈图片预览，目前仅支持图片预览
 
 优劣势(单论只需要预览图片需求)：
- * 对于异形屏，尝试了很多github图片预览库，发现横屏状态下，缩略图与预览图过度动画并不能无缝衔接。
- 此库适配了异形屏，横屏状态下缩略图与预览图过度动画之间无缝衔接
- * 不足之处在于，如果APP采用非沉浸式，那么打开预览的界面（Activity）如果非全屏，预览界面全屏，那么退出预览时，在过度动画结束时由于要恢复Activity的状态栏，此时会有顿挫感。因此建议采用沉浸式模式或使用跟随模式预览图片(预览界面是否全屏看打开预览的界面是否全屏)。推荐一个实现沉浸式的库[ImmersionBar](https://github.com/gyf-dev/ImmersionBar)
+ * 对于异形屏，尝试了很多github图片预览库，发现横屏状态下，缩略图与预览图过渡动画并不能无缝衔接。
+ 此库适配了异形屏，横屏状态下缩略图与预览图过渡动画之间无缝衔接
+ * 适配了常用的使用场景，优化各种图片缩放类型下的过渡动画，提供完善的过度动画
+ * 不足之处在于，如果APP采用非沉浸式，那么打开预览的界面（Activity）如果非全屏，预览界面全屏，那么退出预览时，在过渡动画结束时由于要恢复Activity的状态栏，
+ 此时会有顿挫感。因此建议采用沉浸式模式或使用跟随模式预览图片(预览界面是否全屏看打开预览的界面是否全屏)。推荐一个实现沉浸式的库[ImmersionBar](https://github.com/gyf-dev/ImmersionBar)
 
 
 [项目 github 地址](https://github.com/wanggaowan/PhotoPreview)
@@ -13,9 +15,9 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![](https://jitpack.io/v/wanggaowan/PhotoPreview.svg)](https://jitpack.io/#wanggaowan/PhotoPreview)
 
-不会弄gif，建议下载[demoApk](./app-debug.apk)查看
+建议下载[demoApk](./app-debug.apk)查看
 
-<img src="./screenshot.jpg" width="360px" height="976px">
+<img src="./screenshot.jpg" width="360px" height="1265px">
 
 #### 引入
 
@@ -75,9 +77,11 @@ PhotoPreview
 全部配置
 ```java
 PhotoPreview
-    .with(activity) // 打开预览的界面
+    .with(activity) // 打开预览的界面(缩略图所处界面)
+    .config(config) // 应用其它配置，以下配置覆盖此config中对应的属性
     .imageLoader(imageLoader) // 图片加载器
     .indicatorType(IndicatorType.DOT) // 图片指示器类型(目前只有圆点和文本)，预览>=2张图片时有效
+    .maxIndicatorDot(9) // indicatorType为DOT时，设置DOT最大数量，如果sources数量超过此值，则改用IndicatorType.TEXT
     .selectIndicatorColor(selectColor) // 指示当前预览界面指示器颜色
     .normalIndicatorColor(normalColor) // 非当前预览界面指示器颜色
     .progressDrawable(drawable) // 图片加载loading drawable，用于imageLoader加载图片之前显示
@@ -88,6 +92,7 @@ PhotoPreview
     .sources(urls) // 设置图片数据，有sources(Object...)和source(List)两个重载
     .onLongClickListener(listener) // 设置图片长按监听
     .onDismissListener(listener) // 设置预览关闭监听
+    .animDuration(400) // 动画时间，null：使用默认时间，<=0: 不执行动画
     .build()
     .show(thumbnailView); // 展示预览，有show()、show(View)、show(IFindThumbnailView)三个重载
 ```
@@ -97,7 +102,19 @@ PhotoPreview
 PhotoPreview.with(activity).build().dismiss();
 ```
 
+使用建议：
+
+ 1. 缩略图尽量指定ImageView对象，这样有更好的过渡动画效果，更自然、顺滑
+ 2. ImageLoader加载预览图时，如果使用Glide库等，建议不要设置placeholder，因为过渡动画可能取到占位图（执行过渡动画时预览图未加载成功）实现过渡，
+使用占位图进行过渡时，当动画结束后，会有一个模糊到清晰的闪屏，特别是占位图和预览图清晰度相差很大时或完全不是同一张照片的情况下。如果要处理失败后显示的
+情况，可以使用errorDrawable。
+
+**感谢**
+
 此库灵感来源 [PhotoViewer](https://github.com/wanglu1209/PhotoViewer)
+
+动画优化参考 [XPopup](https://github.com/li-xiaojun/XPopup)
+
 
 #### **Proguard**
 

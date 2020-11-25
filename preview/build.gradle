@@ -7,8 +7,8 @@ android {
     defaultConfig {
         minSdkVersion versions.minSdkVersion
         targetSdkVersion versions.targetSdkVersion
-        versionCode 11
-        versionName "2.0"
+        versionCode 12
+        versionName "2.1"
     }
 
     buildTypes {
@@ -17,11 +17,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    // 设置JDK1.8
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation deps.appcompat
     implementation deps.recyclerview
-    implementation deps.photoview
+    implementation deps.transition
 }

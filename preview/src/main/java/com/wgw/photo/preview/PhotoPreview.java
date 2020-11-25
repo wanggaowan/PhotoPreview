@@ -3,8 +3,6 @@ package com.wgw.photo.preview;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.ImageView;
 
 import com.wgw.photo.preview.interfaces.IFindThumbnailView;
@@ -12,6 +10,7 @@ import com.wgw.photo.preview.interfaces.ImageLoader;
 import com.wgw.photo.preview.interfaces.OnDismissListener;
 import com.wgw.photo.preview.interfaces.OnLongClickListener;
 
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +25,6 @@ import androidx.lifecycle.Lifecycle.Event;
 import androidx.lifecycle.Lifecycle.State;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
-import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * 图片预览，支持预览单张，多张图片。
@@ -44,7 +42,7 @@ public class PhotoPreview {
     /**
      * 图片预览池，一个Activity持有一个预览对象
      */
-    private static final Map<String, PreviewDialogFragment> DIALOG_POOL = new HashMap<>();
+    private static final Map<String, WeakReference<PreviewDialogFragment>> DIALOG_POOL = new HashMap<>();
     
     private final FragmentActivity mFragmentActivity;
     private Config mConfig;
@@ -55,11 +53,13 @@ public class PhotoPreview {
     
     private static PreviewDialogFragment getDialog(final FragmentActivity activity, boolean noneCreate) {
         final String name = activity.toString();
-        PreviewDialogFragment fragment = DIALOG_POOL.get(name);
+        WeakReference<PreviewDialogFragment> reference = DIALOG_POOL.get(name);
+        PreviewDialogFragment fragment = reference == null ? null : reference.get();
         if (fragment == null) {
             if (noneCreate) {
                 fragment = new PreviewDialogFragment();
-                DIALOG_POOL.put(name, fragment);
+                reference = new WeakReference<>(fragment);
+                DIALOG_POOL.put(name, reference);
                 activity.getLifecycle().addObserver(new LifecycleObserver() {
                     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
                     public void onDestroy() {
@@ -209,6 +209,26 @@ public class PhotoPreview {
     }
     
     /**
+     * 设置动画执行时间
+     *
+     * @param duration <ul>
+     *                 <li>null: 使用默认动画时间{@link PhotoPreviewFragment#getOpenAndExitAnimDuration(View)}</li>
+     *                 <li><=0: 不执行动画</li>
+     *                 </ul>
+     */
+    public void setAnimDuration(Long duration) {
+        mConfig.animDuration = duration;
+    }
+    
+    /**
+     * 当{@link #setIndicatorType(int)}为{@link IndicatorType#DOT}时，设置DOT最大数量，
+     * 如果{@link #setSource(List)}或{@link #setSource(Object...)}超出最大值，则采用{@link IndicatorType#TEXT}
+     */
+    public void setMaxIndicatorDot(int maxSize) {
+        mConfig.maxIndicatorDot = maxSize;
+    }
+    
+    /**
      * 不设置缩略图，预览界面打开关闭将只有从中心缩放动画
      */
     public void show() {
@@ -216,11 +236,13 @@ public class PhotoPreview {
     }
     
     /**
-     * @param thumbnailView 缩略图，可以是{@link AbsListView}、{@link RecyclerView}、{@link ViewGroup}或{@link View}，
-     *                      如果是{@link AbsListView}或{@link RecyclerView}，建议ITEM内容只有图片控件，因为在打开和关闭图片预览时，
-     *                      以ITEM整体视图为缩略图进行过度动画，所以如果不是只有图片内容，那么过度动画效果可能不佳，此时建议使用{@link #show(IFindThumbnailView)}
+     * 展示预览
+     *
+     * @param thumbnailView 缩略图{@link View}，建议传{@link ImageView}对象，这样过度效果更好。
+     *                      如果多图预览，请使用{@link #show(IFindThumbnailView)}
      */
     public void show(final View thumbnailView) {
+        correctConfig();
         final PreviewDialogFragment fragment = getDialog(mFragmentActivity, true);
         if (mFragmentActivity.getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
             fragment.show(mFragmentActivity, mConfig, thumbnailView);
@@ -236,10 +258,12 @@ public class PhotoPreview {
     }
     
     /**
-     * @param findThumbnailView 在打开和关闭预览时提供缩略图对象，用于过度动画。对于预览{@link AbsListView}或{@link RecyclerView}中的对象很有帮助。
-     *                          因为列表中的Item往往都不是只是图片控件，还有很多其它对象，此时缩略图只想指定Item中的图片控件，那么使用该对象就很容易实现。
+     * 展示预览
+     *
+     * @param findThumbnailView 多图预览时，打开和关闭预览时用于提供缩略图对象，用于过度动画
      */
     public void show(final IFindThumbnailView findThumbnailView) {
+        correctConfig();
         final PreviewDialogFragment fragment = getDialog(mFragmentActivity, true);
         if (mFragmentActivity.getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
             fragment.show(mFragmentActivity, mConfig, findThumbnailView);
@@ -251,6 +275,20 @@ public class PhotoPreview {
                     mFragmentActivity.getLifecycle().removeObserver(this);
                 }
             });
+        }
+    }
+    
+    /**
+     * 纠正可能的错误配置
+     */
+    private void correctConfig() {
+        int sourceSize = mConfig.sources == null ? 0 : mConfig.sources.size();
+        if (sourceSize == 0) {
+            mConfig.defaultShowPosition = 0;
+        } else if (mConfig.defaultShowPosition >= sourceSize) {
+            mConfig.defaultShowPosition = sourceSize - 1;
+        } else if (mConfig.defaultShowPosition < 0) {
+            mConfig.defaultShowPosition = 0;
         }
     }
     
@@ -405,6 +443,28 @@ public class PhotoPreview {
          */
         public Builder defaultShowPosition(int position) {
             mConfig.defaultShowPosition = position;
+            return this;
+        }
+        
+        /**
+         * 设置动画执行时间
+         *
+         * @param duration <ul>
+         *                 <li>null: 使用默认动画时间{@link PhotoPreviewFragment#getOpenAndExitAnimDuration(View)}</li>
+         *                 <li><=0: 不执行动画</li>
+         *                 </ul>
+         */
+        public Builder animDuration(Long duration) {
+            mConfig.animDuration = duration;
+            return this;
+        }
+        
+        /**
+         * 当{@link #indicatorType(int)}为{@link IndicatorType#DOT}时，设置DOT最大数量，
+         * 如果{@link #sources(List)}或{@link #sources(Object...)}超出最大值，则采用{@link IndicatorType#TEXT}
+         */
+        public Builder maxIndicatorDot(int maxSize) {
+            mConfig.maxIndicatorDot = maxSize;
             return this;
         }
         

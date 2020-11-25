@@ -17,7 +17,7 @@ import androidx.annotation.IntDef;
 @IntDef({IndicatorType.DOT, IndicatorType.TEXT})
 public @interface IndicatorType {
     /**
-     * 圆点,如果图片多于九张，则设置该类型也采用TEXT类型
+     * 圆点,如果图片多于{@link Config#maxIndicatorDot}则采用{@link #TEXT}
      */
     int DOT = 0;
     

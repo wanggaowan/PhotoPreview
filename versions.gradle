@@ -16,10 +16,10 @@ deps.glide = 'com.github.bumptech.glide:glide:4.9.0'
 deps.glidecompiler = 'com.github.bumptech.glide:compiler:4.9.0'
 deps.rvadapterhelper = 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.50'
 deps.recyclerview = 'androidx.recyclerview:recyclerview:1.1.0'
-deps.leakcanary = 'com.squareup.leakcanary:leakcanary-android:1.6.3'
-deps.leakcanaryrelease = 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.3'
+deps.leakcanary = 'com.squareup.leakcanary:leakcanary-android:2.5'
 deps.photoview = 'com.github.chrisbanes:PhotoView:2.3.0'
 // 沉浸式状态栏
 deps.immersionbar = 'com.gyf.immersionbar:immersionbar:3.0.0'
+deps.transition = 'androidx.transition:transition:1.2.0'
 ext.deps = deps
 
