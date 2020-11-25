@@ -1,6 +1,8 @@
 package com.wgw.photo.preview.util.notch;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import androidx.annotation.IntDef;
@@ -11,7 +13,8 @@ import androidx.annotation.IntDef;
  * @author Created by 汪高皖 on 2019/3/12 0012 09:55
  */
 @Target(ElementType.PARAMETER)
-@IntDef({CutOutMode.DEFAULT,CutOutMode.SHORT_EDGES,CutOutMode.NEVER})
+@Retention(RetentionPolicy.SOURCE)
+@IntDef({CutOutMode.DEFAULT, CutOutMode.SHORT_EDGES, CutOutMode.NEVER})
 public @interface CutOutMode {
     /**
      * 默认模式，在非沉浸式状态下，效果与{@link #NEVER}一致，在沉浸式状态下，效果与{@link #SHORT_EDGES}一致
