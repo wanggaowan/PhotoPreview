@@ -34,7 +34,7 @@
 2. 增加依赖
    ```groovy
    dependencies {
-      implementation 'com.github.wanggaowan:PhotoPreview:latest.release'
+      implementation 'com.github.wanggaowan:PhotoPreview:latest.release.here'
    }
    ```
 
