@@ -432,7 +432,7 @@ public class PhotoPreview {
         /**
          * 数据源
          */
-        public Builder sources(@NonNull List<Object> sources) {
+        public Builder sources(@NonNull List<?> sources) {
             assert sources != null;
             mConfig.sources = sources;
             return this;

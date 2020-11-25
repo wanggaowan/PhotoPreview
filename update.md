@@ -1,5 +1,8 @@
 版本更新日志
 
+### v2.3.0~2.3.1
+1. 发现之前PhotoPreview设置list类型的数据不方便，必须要传List<Object>才调用sources(List)，其它都调用sources(Object...)，所以调整list为List<?>,只要是List类型就可以，不管泛型
+
 ### v2.2
 1. 过渡动画使用Transition库实现，同时保留常规过渡动画实现方式，自动选择最佳过渡动画
 2. 增加动画时间配置，如果 <=0 则不启用过渡动画
