@@ -18,10 +18,10 @@ import androidx.viewpager.widget.ViewPager;
 class PhotoPreviewPagerAdapter extends FragmentPagerAdapter {
     
     private final FragmentManager mFragmentManager;
-    private final List<Object> mSources;
+    private final List<?> mSources;
     private OnUpdateFragmentDataListener mOnUpdateFragmentDataListener;
     
-    public PhotoPreviewPagerAdapter(FragmentManager fm, List<Object> sources) {
+    public PhotoPreviewPagerAdapter(FragmentManager fm, List<?> sources) {
         super(fm, FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
         mSources = sources;
         mFragmentManager = fm;

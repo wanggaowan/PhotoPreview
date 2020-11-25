@@ -25,7 +25,7 @@ public class Config {
     public OnLongClickListener onLongClickListener;
     public OnDismissListener onDismissListener;
     public Boolean fullScreen/*默认跟随打开预览的界面显示模式*/;
-    public List<Object> sources;
+    public List<?> sources;
     public int defaultShowPosition;
     public Long animDuration/*打开和退出预览时的过度动画时间*/;
 }

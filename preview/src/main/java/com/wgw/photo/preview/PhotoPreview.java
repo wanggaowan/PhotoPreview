@@ -203,7 +203,7 @@ public class PhotoPreview {
     /**
      * 设置图片地址
      */
-    public void setSource(@NonNull List<Object> sources) {
+    public void setSource(@NonNull List<?> sources) {
         assert sources != null;
         mConfig.sources = sources;
     }
