@@ -1,4 +1,4 @@
-package com.github.chrisbanes.photoview.copy;
+package com.github.chrisbanes.photoview.custom;
 
 
 import androidx.annotation.RestrictTo;

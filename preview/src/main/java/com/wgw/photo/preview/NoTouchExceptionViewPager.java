@@ -5,7 +5,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
-import com.github.chrisbanes.photoview.copy.PhotoView;
+import com.github.chrisbanes.photoview.custom.PhotoView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

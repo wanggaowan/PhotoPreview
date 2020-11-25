@@ -27,7 +27,7 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 
-import com.github.chrisbanes.photoview.copy.PhotoViewAttacher;
+import com.github.chrisbanes.photoview.custom.PhotoViewAttacher;
 import com.wgw.photo.preview.util.MatrixUtils;
 
 import androidx.annotation.NonNull;
