@@ -39,7 +39,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 @RestrictTo(Scope.LIBRARY)
 public class PhotoView extends AppCompatImageView {
     
-    private PhotoViewAttacher attacher;
+    protected PhotoViewAttacher attacher;
     private ScaleType pendingScaleType;
     
     public PhotoView(Context context) {

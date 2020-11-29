@@ -67,8 +67,8 @@ public class PreviewDialogFragment extends DialogFragment {
     private TextView mTvTextIndicator;
     private FrameLayout mLlCustom;
     
-    @Nullable
     ShareData mShareData;
+    
     private int mCurrentPagerIndex = 0;
     
     /**
@@ -103,12 +103,12 @@ public class PreviewDialogFragment extends DialogFragment {
             return;
         }
         
-        Window window = getDialog().getWindow();
-        if (window == null) {
+        if (getDialog() == null || getDialog().getWindow() == null) {
             super.onActivityCreated(null);
             return;
         }
         
+        Window window = getDialog().getWindow();
         // 全屏处理
         window.requestFeature(Window.FEATURE_NO_TITLE);
         boolean fullScreen = isFullScreen();

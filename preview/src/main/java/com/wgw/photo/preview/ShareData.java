@@ -49,5 +49,10 @@ class ShareData {
      */
     boolean showNeedAnim;
     
+    /**
+     * 预览界面是否第一次创建
+     */
+    boolean isFirstCreate = true;
+    
     ShareData(@NonNull Config config) {this.config = config;}
 }

@@ -10,14 +10,13 @@
         android:id="@+id/iv_anim"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/transparent"
-        tools:ignore="ContentDescription" />
+        tools:ignore="ContentDescription"
+        android:visibility="invisible"/>
 
     <com.wgw.photo.preview.PhotoView
         android:id="@+id/photoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/transparent"
         android:visibility="invisible" />
 
     <ProgressBar

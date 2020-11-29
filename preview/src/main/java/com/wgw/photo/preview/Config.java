@@ -28,4 +28,25 @@ public class Config {
     public List<?> sources;
     public int defaultShowPosition;
     public Long animDuration/*打开和退出预览时的过度动画时间*/;
+    
+    public void apply(Config config) {
+        if (config == null) {
+            return;
+        }
+        
+        this.imageLoader = config.imageLoader;
+        this.indicatorType = config.indicatorType;
+        this.maxIndicatorDot = config.maxIndicatorDot;
+        this.selectIndicatorColor = config.selectIndicatorColor;
+        this.normalIndicatorColor = config.normalIndicatorColor;
+        this.progressDrawable = config.progressDrawable;
+        this.progressColor = config.progressColor;
+        this.delayShowProgressTime = config.delayShowProgressTime;
+        this.onLongClickListener = config.onLongClickListener;
+        this.onDismissListener = config.onDismissListener;
+        this.fullScreen = config.fullScreen;
+        this.sources = config.sources;
+        this.defaultShowPosition = config.defaultShowPosition;
+        this.animDuration = config.animDuration;
+    }
 }

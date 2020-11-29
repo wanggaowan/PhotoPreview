@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -30,18 +29,25 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     private static final int RESET_ANIM_TIME = 100;
     
     private final Scroller mScroller;
+    
+    // 是否是预览的第一个View
+    private boolean mStartView = false;
+    // 是否是预览的最后一个View
+    private boolean mEndView = false;
     private PhotoPreviewFragment mPhotoPreviewFragment;
     private ImageChangeListener mImageChangeListener;
-    private DrawEndListener mDrawEndListener;
     private final ViewConfiguration mViewConfiguration;
     
-    private boolean mDrawableChange = true;
-    // 向下拖动触发
-    private boolean mBottomDragging;
+    // 当前是否正在拖拽
+    private boolean mDragging;
     private boolean mBgAnimStart;
     
     // 透明度
     private int mIntAlpha = 255;
+    // 记录缩放后垂直方向边界判定值
+    private int mScaleVerticalScrollEdge = PhotoViewAttacher.VERTICAL_EDGE_INSIDE;
+    // 记录缩放后水平方向边界判定值
+    private int mScaleHorizontalScrollEdge = PhotoViewAttacher.HORIZONTAL_EDGE_INSIDE;
     
     public PhotoView(Context context) {
         this(context, null);
@@ -57,17 +63,6 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
         setOnViewDragListener(this);
         mScroller = new Scroller(context);
         mViewConfiguration = ViewConfiguration.get(context);
-    }
-    
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        if (mDrawableChange) {
-            mDrawableChange = false;
-            if (mDrawEndListener != null) {
-                mDrawEndListener.onEnd();
-            }
-        }
     }
     
     @Override
@@ -92,8 +87,11 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     }
     
     private void onFingerUp() {
-        mBottomDragging = false;
+        mDragging = false;
         if (getScale() > 1) {
+            if (Math.abs(getScrollX()) > 0 || Math.abs(getScrollY()) > 0) {
+                reset();
+            }
             return;
         }
         
@@ -126,22 +124,29 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     
     @Override
     public void onScaleChange(float scaleFactor, float focusX, float focusY) {
-    
+        mScaleVerticalScrollEdge = attacher.getVerticalScrollEdge();
+        mScaleHorizontalScrollEdge = attacher.getHorizontalScrollEdge();
     }
     
     @Override
-    public void onDrag(float dx, float dy) {
+    public boolean onDrag(float dx, float dy) {
         boolean intercept = mBgAnimStart
-            || Math.abs(dx) > Math.abs(dy)
             || Math.sqrt((dx * dx) + (dy * dy)) < mViewConfiguration.getScaledTouchSlop()
-            || getScale() > 1
             || !hasVisibleDrawable();
         
-        if (!mBottomDragging && intercept) {
-            return;
+        if (!mDragging && intercept) {
+            return false;
         }
         
-        if (!mBottomDragging) {
+        if (getScale() > 1) {
+            return dragWhenScaleThanOne(dx, dy);
+        }
+        
+        if (!mDragging && Math.abs(dx) > Math.abs(dy)) {
+            return false;
+        }
+        
+        if (!mDragging) {
             // 执行拖拽操作，请求父类不要拦截请求
             ViewParent parent = getParent();
             if (parent != null) {
@@ -149,7 +154,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
             }
         }
         
-        mBottomDragging = true;
+        mDragging = true;
         float scale = getScale();
         // 移动图像
         scrollBy(((int) -dx), ((int) -dy));
@@ -179,6 +184,66 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
             // 更改大小
             setScale(scale);
         }
+        return true;
+    }
+    
+    /**
+     * 处理图片如果超出控件大小时的滑动
+     */
+    private boolean dragWhenScaleThanOne(float dx, float dy) {
+        boolean dxBigDy = Math.abs(dx) > Math.abs(dy);
+        if (mDragging) {
+            dx *= 0.2f;
+            dy *= 0.2f;
+            int scrollX = (int) (getScrollX() - dx);
+            int scrollY = (int) (getScrollY() - dy);
+            int width = (int) (getWidth() * 0.2);
+            int height = (int) (getHeight() * 0.2);
+            if (Math.abs(scrollX) > width) {
+                dx = 0;
+            }
+            
+            if (Math.abs(scrollY) > height) {
+                dy = 0;
+            }
+            
+            if (dxBigDy) {
+                dy = 0;
+            } else {
+                dx = 0;
+            }
+            
+            // 移动图像
+            scrollBy(((int) -dx), ((int) -dy));
+            return true;
+        } else {
+            int verticalScrollEdge = attacher.getVerticalScrollEdge();
+            int horizontalScrollEdge = attacher.getHorizontalScrollEdge();
+            boolean isTop = verticalScrollEdge == PhotoViewAttacher.VERTICAL_EDGE_TOP
+                || verticalScrollEdge == PhotoViewAttacher.VERTICAL_EDGE_BOTH;
+            boolean isBottom = verticalScrollEdge == PhotoViewAttacher.VERTICAL_EDGE_BOTTOM
+                || verticalScrollEdge == PhotoViewAttacher.VERTICAL_EDGE_BOTH;
+            boolean isStart = horizontalScrollEdge == PhotoViewAttacher.HORIZONTAL_EDGE_LEFT
+                || horizontalScrollEdge == PhotoViewAttacher.HORIZONTAL_EDGE_BOTH;
+            boolean isEnd = horizontalScrollEdge == PhotoViewAttacher.HORIZONTAL_EDGE_RIGHT
+                || horizontalScrollEdge == PhotoViewAttacher.HORIZONTAL_EDGE_BOTH;
+            boolean isVerticalScroll = !dxBigDy && ((isTop && dy > 0) || (isBottom && dy < 0));
+            boolean isHorizontalScroll = dxBigDy && ((mStartView && isStart && dx > 0) || (mEndView && isEnd && dx < 0));
+            if ((isVerticalScroll && mScaleVerticalScrollEdge == PhotoViewAttacher.VERTICAL_EDGE_OUTSIDE)
+                || (isHorizontalScroll && mScaleHorizontalScrollEdge == PhotoViewAttacher.VERTICAL_EDGE_OUTSIDE)) {
+                // 执行拖拽操作，请求父类不要拦截请求
+                ViewParent parent = getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(true);
+                }
+                
+                mDragging = true;
+                // 移动图像
+                scrollBy(((int) -dx), ((int) -dy));
+                return true;
+            }
+        }
+        return false;
     }
     
     /**
@@ -204,7 +269,6 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     @Override
     public void setImageDrawable(Drawable drawable) {
         super.setImageDrawable(drawable);
-        mDrawableChange = true;
         if (mImageChangeListener != null) {
             mImageChangeListener.onChange(getDrawable());
         }
@@ -213,7 +277,6 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     @Override
     public void setImageResource(int resId) {
         super.setImageResource(resId);
-        mDrawableChange = true;
         if (mImageChangeListener != null) {
             mImageChangeListener.onChange(getDrawable());
         }
@@ -222,7 +285,6 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     @Override
     public void setImageURI(Uri uri) {
         super.setImageURI(uri);
-        mDrawableChange = true;
         if (mImageChangeListener != null) {
             mImageChangeListener.onChange(getDrawable());
         }
@@ -231,7 +293,6 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     @Override
     public void setImageBitmap(Bitmap bm) {
         super.setImageBitmap(bm);
-        mDrawableChange = true;
         if (mImageChangeListener != null) {
             mImageChangeListener.onChange(getDrawable());
         }
@@ -245,8 +306,12 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
         mImageChangeListener = listener;
     }
     
-    void setDrawEndListener(DrawEndListener listener) {
-        mDrawEndListener = listener;
+    public void setStartView(boolean isStartView) {
+        mStartView = isStartView;
+    }
+    
+    public void setEndView(boolean isEndView) {
+        mEndView = isEndView;
     }
     
     /**
@@ -258,15 +323,5 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
          * 图片发生更改，但是此时并不一定绘制到界面
          */
         void onChange(Drawable drawable);
-    }
-    
-    /**
-     * 图片绘制完成
-     */
-    interface DrawEndListener {
-        /**
-         * 图片绘制完成,只在图片发生变更后的第一次绘制时回调
-         */
-        void onEnd();
     }
 }

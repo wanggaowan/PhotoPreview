@@ -33,6 +33,7 @@ import androidx.lifecycle.OnLifecycleEvent;
  *
  * @author Created by wanggaowan on 2019/2/26 0026 16:55
  */
+@SuppressWarnings("ConstantConditions")
 public class PhotoPreview {
     /**
      * 全局图片加载器
@@ -45,8 +46,11 @@ public class PhotoPreview {
     private static final Map<String, WeakReference<PreviewDialogFragment>> DIALOG_POOL = new HashMap<>();
     
     private final FragmentActivity mFragmentActivity;
-    private Config mConfig;
+    private final Config mConfig;
     
+    /**
+     * 设置图片全局加载器
+     */
     public static void setGlobalImageLoader(ImageLoader imageLoader) {
         globalImageLoader = imageLoader;
     }
@@ -93,16 +97,13 @@ public class PhotoPreview {
         assert activity != null;
         mFragmentActivity = activity;
         mConfig = new Config();
-        mConfig.imageLoader = globalImageLoader;
     }
     
     /**
      * 应用其它配置
      */
     public void setConfig(Config config) {
-        if (config != null) {
-            mConfig = config;
-        }
+        mConfig.apply(config);
     }
     
     /**
@@ -110,9 +111,6 @@ public class PhotoPreview {
      */
     public void setImageLoader(ImageLoader imageLoader) {
         mConfig.imageLoader = imageLoader;
-        if (mConfig.imageLoader == null) {
-            mConfig.imageLoader = globalImageLoader;
-        }
     }
     
     /**
@@ -290,6 +288,10 @@ public class PhotoPreview {
         } else if (mConfig.defaultShowPosition < 0) {
             mConfig.defaultShowPosition = 0;
         }
+        
+        if (mConfig.imageLoader == null) {
+            mConfig.imageLoader = globalImageLoader;
+        }
     }
     
     /**
@@ -318,16 +320,13 @@ public class PhotoPreview {
         private Builder(FragmentActivity activity) {
             this.activity = activity;
             mConfig = new Config();
-            mConfig.imageLoader = globalImageLoader;
         }
         
         /**
          * 应用其它配置
          */
         public Builder config(Config config) {
-            if (config != null) {
-                mConfig = config;
-            }
+            mConfig.apply(config);
             return this;
         }
         

@@ -15,6 +15,7 @@
  */
 package com.github.chrisbanes.photoview.custom;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Matrix;
 import android.graphics.Matrix.ScaleToFit;
@@ -46,17 +47,29 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     public static float DEFAULT_MAX_SCALE = 3.0f;
     public static float DEFAULT_MID_SCALE = 1.75f;
     public static float DEFAULT_MIN_SCALE = 1.0f;
-    private static int DEFAULT_ZOOM_DURATION = 200;
+    private static final int DEFAULT_ZOOM_DURATION = 200;
     
-    private static final int HORIZONTAL_EDGE_NONE = -1;
-    private static final int HORIZONTAL_EDGE_LEFT = 0;
-    private static final int HORIZONTAL_EDGE_RIGHT = 1;
-    private static final int HORIZONTAL_EDGE_BOTH = 2;
-    private static final int VERTICAL_EDGE_NONE = -1;
-    private static final int VERTICAL_EDGE_TOP = 0;
-    private static final int VERTICAL_EDGE_BOTTOM = 1;
-    private static final int VERTICAL_EDGE_BOTH = 2;
-    private static int SINGLE_TOUCH = 1;
+    // 图片左右边缘包含在ImageView宽度内
+    public static final int HORIZONTAL_EDGE_INSIDE = -2;
+    // 图片左右边缘超出ImageView宽度
+    public static final int HORIZONTAL_EDGE_OUTSIDE = -1;
+    // 图片左边缘靠近ImageView左边缘
+    public static final int HORIZONTAL_EDGE_LEFT = 0;
+    // 图片右边缘靠近ImageView右边缘
+    public static final int HORIZONTAL_EDGE_RIGHT = 1;
+    // 图片左右边缘靠近ImageView左右边缘，此时图片宽度等于ImageView宽度
+    public static final int HORIZONTAL_EDGE_BOTH = 2;
+    // 图片上下边缘包含在ImageView高度内
+    public static final int VERTICAL_EDGE_INSIDE = -2;
+    // 图片上下边缘超出ImageView高度
+    public static final int VERTICAL_EDGE_OUTSIDE = -1;
+    // 图片上边缘靠近ImageView上边缘
+    public static final int VERTICAL_EDGE_TOP = 0;
+    // 图片下边缘靠近ImageView下边缘
+    public static final int VERTICAL_EDGE_BOTTOM = 1;
+    // 图片上下边缘靠近ImageView上下边缘，此时图片高度等于ImageView高度
+    public static final int VERTICAL_EDGE_BOTH = 2;
+    private static final int SINGLE_TOUCH = 1;
     
     private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
     private int mZoomDuration = DEFAULT_ZOOM_DURATION;
@@ -67,7 +80,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private boolean mAllowParentInterceptOnEdge = true;
     private boolean mBlockParentIntercept = false;
     
-    private ImageView mImageView;
+    private final ImageView mImageView;
     
     // Gesture Detectors
     private GestureDetector mGestureDetector;
@@ -99,7 +112,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private boolean mZoomEnabled = true;
     private ScaleType mScaleType = ScaleType.FIT_CENTER;
     
-    private OnGestureListener onGestureListener = new OnGestureListener() {
+    private final OnGestureListener onGestureListener = new OnGestureListener() {
         
         @Override
         public void onDrag(float dx, float dy) {
@@ -108,12 +121,14 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             //     return; // Do not drag if we are already scaling
             // }
             
-            if (mOnViewDragListener != null) {
-                mOnViewDragListener.onDrag(dx, dy);
-            }
-            
             mSuppMatrix.postTranslate(dx, dy);
             checkAndDisplayMatrix();
+            if (mOnViewDragListener != null) {
+                boolean consume = mOnViewDragListener.onDrag(dx, dy);
+                if (consume) {
+                    return;
+                }
+            }
             
             /*
              * Here we decide whether to let the ImageView's parent to start taking
@@ -126,11 +141,15 @@ public class PhotoViewAttacher implements View.OnTouchListener,
              */
             ViewParent parent = mImageView.getParent();
             if (mAllowParentInterceptOnEdge && !mScaleDragDetector.isScaling() && !mBlockParentIntercept) {
+                // TODO: 11/29/20 wanggaowan 逻辑判断调整，增加 mHorizontalScrollEdge == HORIZONTAL_EDGE_INSIDE时也让父类拦截
                 if (mHorizontalScrollEdge == HORIZONTAL_EDGE_BOTH
+                    || mHorizontalScrollEdge == HORIZONTAL_EDGE_INSIDE // 说明图片实际宽度小于View的宽度
                     || (mHorizontalScrollEdge == HORIZONTAL_EDGE_LEFT && dx >= 1f)
                     || (mHorizontalScrollEdge == HORIZONTAL_EDGE_RIGHT && dx <= -1f)
-                    || (mVerticalScrollEdge == VERTICAL_EDGE_TOP && dy >= 1f)
-                    || (mVerticalScrollEdge == VERTICAL_EDGE_BOTTOM && dy <= -1f)
+                    // 本项目只结合ViewPager,只有左右滑动冲突，因此不做垂直处理
+                    // || mVerticalScrollEdge == VERTICAL_EDGE_BOTH
+                    // || (mVerticalScrollEdge == VERTICAL_EDGE_TOP && dy >= 1f)
+                    // || (mVerticalScrollEdge == VERTICAL_EDGE_BOTTOM && dy <= -1f)
                 ) {
                     if (parent != null) {
                         parent.requestDisallowInterceptTouchEvent(false);
@@ -163,6 +182,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
         }
     };
     
+    @SuppressLint("ClickableViewAccessibility")
     public PhotoViewAttacher(ImageView imageView) {
         mImageView = imageView;
         imageView.setOnTouchListener(this);
@@ -677,7 +697,13 @@ public class PhotoViewAttacher implements View.OnTouchListener,
                     deltaY = (viewHeight - height) / 2 - rect.top;
                     break;
             }
-            mVerticalScrollEdge = VERTICAL_EDGE_BOTH;
+            
+            // TODO: 11/29/20 wanggaowan 调整逻辑，只有图片高度等于view高度才设置为VERTICAL_EDGE_BOTH
+            if (height == viewHeight) {
+                mVerticalScrollEdge = VERTICAL_EDGE_BOTH;
+            } else {
+                mVerticalScrollEdge = VERTICAL_EDGE_INSIDE;
+            }
         } else if (rect.top > 0) {
             mVerticalScrollEdge = VERTICAL_EDGE_TOP;
             deltaY = -rect.top;
@@ -685,7 +711,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             mVerticalScrollEdge = VERTICAL_EDGE_BOTTOM;
             deltaY = viewHeight - rect.bottom;
         } else {
-            mVerticalScrollEdge = VERTICAL_EDGE_NONE;
+            mVerticalScrollEdge = VERTICAL_EDGE_OUTSIDE;
         }
         final int viewWidth = getImageViewWidth(mImageView);
         if (width <= viewWidth) {
@@ -700,7 +726,13 @@ public class PhotoViewAttacher implements View.OnTouchListener,
                     deltaX = (viewWidth - width) / 2 - rect.left;
                     break;
             }
-            mHorizontalScrollEdge = HORIZONTAL_EDGE_BOTH;
+            
+            // TODO: 11/29/20 wanggaowan 调整逻辑，只有图片宽度等于view宽度才设置为HORIZONTAL_EDGE_BOTH
+            if (width == viewWidth) {
+                mHorizontalScrollEdge = HORIZONTAL_EDGE_BOTH;
+            } else {
+                mHorizontalScrollEdge = HORIZONTAL_EDGE_INSIDE;
+            }
         } else if (rect.left > 0) {
             mHorizontalScrollEdge = HORIZONTAL_EDGE_LEFT;
             deltaX = -rect.left;
@@ -708,7 +740,7 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             deltaX = viewWidth - rect.right;
             mHorizontalScrollEdge = HORIZONTAL_EDGE_RIGHT;
         } else {
-            mHorizontalScrollEdge = HORIZONTAL_EDGE_NONE;
+            mHorizontalScrollEdge = HORIZONTAL_EDGE_OUTSIDE;
         }
         // Finally actually translate the matrix
         mSuppMatrix.postTranslate(deltaX, deltaY);
@@ -728,6 +760,14 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             mCurrentFlingRunnable.cancelFling();
             mCurrentFlingRunnable = null;
         }
+    }
+    
+    public int getVerticalScrollEdge() {
+        return mVerticalScrollEdge;
+    }
+    
+    public int getHorizontalScrollEdge() {
+        return mHorizontalScrollEdge;
     }
     
     private class AnimatedZoomRunnable implements Runnable {
