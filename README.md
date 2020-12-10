@@ -19,8 +19,8 @@
 
 建议下载[demoApk](./app-debug.apk)查看
 
-|  <img src="./screenshot/example.gif" width="358px" height="688px">   | <img src="./screenshot/example2.gif" width="358px" height="688px">  |
-|  ----  | ----  |
+| <img src="./screenshot/example.gif" width="358px" height="688px"> | <img src="./screenshot/example2.gif" width="358px" height="688px"> |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------ |
 
 
 
@@ -108,13 +108,24 @@ PhotoPreview
 PhotoPreview.with(activity).build().dismiss();
 ```
 
-使用建议：
+使用建议(虽然使用建议看起来很多，让人觉得约束很多，其实关键就是希望缩略图使用ImageView控件)：
 
  1. 缩略图尽量指定ImageView对象，这样有更好的过渡动画效果，更自然、顺滑
- 2. ImageLoader加载预览图时，如果使用Glide库等，建议不要设置placeholder，因为过渡动画可能取到占位图（执行过渡动画时预览图未加载成功）实现过渡，
-使用占位图进行过渡时，当动画结束后，会有一个模糊到清晰的闪屏，特别是占位图和预览图清晰度相差很大时或完全不是同一张照片的情况下。如果要处理失败后显示的
-情况，可以使用errorDrawable。当然，如果认为自己预览的图片较大，加载时间较长，此时推荐使用占位图，但是尽量使用预览图相差不大的图片，直接设置缩略图drawable
-是个不错的选择
+ 2. 图片加载如果使用Glide加载库，建议缩略图不要使用`.override(Target.SIZE_ORIGINAL)`选项，其它加载库也请不要使用大图，否则预览效果可能不那么顺滑，特别是缩略图缩放类型为非CENTER_CROP时。
+   ```java
+   Glide.with(context)
+      .load(url)
+
+      // 不要在缩略图加载时使用，尽量使用小图，如果小图是裁剪过的（比如阿里OSS裁剪后图片），
+      // 那么建议缩略图缩放类型设置为CENTER_CROP，否则过度动画可能不那么顺滑甚至很突兀
+      // .override(Target.SIZE_ORIGINAL)
+
+      // 占位图也建议不要使用，除非你认为加载的大图很大，耗费较多时间或者预览图与最终加载图直接间隔时间较短
+      // 因为过度动画过度时使用的drawable根据动画开始那一刻大图最后加载情况为准
+      // 但是如果一定要使用，那么建议占位图和最终预览的大图之间不要有太大差距，直接设置缩略图drawable是个不错的选择
+      // .placeholder(placeholder)
+      .into(thumbnailView);
+   ```
 
 ## **感谢**
 

@@ -6,6 +6,12 @@
     android:layout_height="match_parent"
     android:background="@color/transparent">
 
+    <com.wgw.photo.preview.PreloadImageView
+        android:id="@+id/iv_pre_load"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible" />
+
     <com.wgw.photo.preview.NoTouchExceptionViewPager
         android:id="@+id/viewpager"
         android:layout_width="match_parent"

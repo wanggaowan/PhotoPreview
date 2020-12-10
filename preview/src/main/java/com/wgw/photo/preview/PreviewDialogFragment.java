@@ -61,6 +61,7 @@ public class PreviewDialogFragment extends DialogFragment {
     private final String tag = UUID.randomUUID().toString();
     
     private FrameLayout mRootView;
+    private PreloadImageView mIvPreload;
     private NoTouchExceptionViewPager mViewPager;
     private LinearLayout mLlDotIndicator;
     private ImageView mIvSelectDot;
@@ -140,6 +141,7 @@ public class PreviewDialogFragment extends DialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         if (mRootView == null) {
             mRootView = (FrameLayout) inflater.inflate(R.layout.view_preview_root, null);
+            mIvPreload = mRootView.findViewById(R.id.iv_pre_load);
             mViewPager = mRootView.findViewById(R.id.viewpager);
             mLlDotIndicator = mRootView.findViewById(R.id.ll_dot_indicator_photo_preview);
             mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot_photo_preview);
@@ -268,6 +270,7 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     private void initViewData() {
+        preloadDefaultPreviewImage();
         mCurrentPagerIndex = mShareData.config.defaultShowPosition;
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
@@ -316,6 +319,18 @@ public class PreviewDialogFragment extends DialogFragment {
             }
             return false;
         };
+    }
+    
+    private void preloadDefaultPreviewImage() {
+        mIvPreload.post(() -> {
+            // 预加载默认预览界面预览图
+            if (mShareData.config.imageLoader != null) {
+                int position = mShareData.config.defaultShowPosition;
+                if (mShareData.config.sources != null && position < mShareData.config.sources.size() && position >= 0) {
+                    mShareData.config.imageLoader.onLoadImage(position, mShareData.config.sources.get(position), mIvPreload);
+                }
+            }
+        });
     }
     
     /**

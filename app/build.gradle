@@ -26,7 +26,9 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation project(':preview')
+    implementation(project(':preview')) {
+        exclude group: 'com.github.bumptech.glide'
+    }
     implementation deps.appcompat
     implementation deps.constraintlayout
     testImplementation deps.junit

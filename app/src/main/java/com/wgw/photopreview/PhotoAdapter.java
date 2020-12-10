@@ -31,7 +31,10 @@ public class PhotoAdapter extends BaseQuickAdapter<String, BaseViewHolder> {
     protected void convert(BaseViewHolder helper, String item) {
         ImageView view = helper.getView(R.id.itemIv);
         view.setScaleType(mScaleType == null ? ScaleType.FIT_CENTER : mScaleType);
-        Glide.with(mContext).load(item).into(view);
+        Glide.with(mContext)
+            .load(item)
+            // .override(Target.SIZE_ORIGINAL)
+            .into(view);
     }
     
     public void setScaleType(ScaleType scaleType) {

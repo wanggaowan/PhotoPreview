@@ -20,11 +20,11 @@ public class Main2Activity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
-        
+    
         final RecyclerView recyclerView = findViewById(R.id.rv);
-        final GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
+        final GridLayoutManager layoutManager = new GridLayoutManager(this, 5);
         recyclerView.setLayoutManager(layoutManager);
-        final PhotoAdapter adapter = new PhotoAdapter(Arrays.asList(MainActivity.picDataMore), ScaleType.CENTER_CROP);
+        final PhotoAdapter adapter = new PhotoAdapter(Arrays.asList(MainActivity.picDataMore), ScaleType.CENTER);
         recyclerView.setAdapter(adapter);
         
         adapter.setOnItemClickListener((adapter1, view, position) -> {
