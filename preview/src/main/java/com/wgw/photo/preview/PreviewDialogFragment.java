@@ -68,8 +68,15 @@ public class PreviewDialogFragment extends DialogFragment {
     private TextView mTvTextIndicator;
     private FrameLayout mLlCustom;
     
+    /**
+     * 用于当前Fragment与预览Fragment之间的通讯
+     */
+    @NonNull
     ShareData mShareData;
     
+    /**
+     * 当前展示预览图下标
+     */
     private int mCurrentPagerIndex = 0;
     
     /**
@@ -94,6 +101,7 @@ public class PreviewDialogFragment extends DialogFragment {
     
     public PreviewDialogFragment() {
         setCancelable(false);
+        mShareData = new ShareData();
     }
     
     @Override
@@ -180,19 +188,19 @@ public class PreviewDialogFragment extends DialogFragment {
         mAdd = false;
         mDismiss = true;
         
-        if (mShareData != null && mShareData.config.onDismissListener != null
+        if (mShareData.config.onDismissListener != null
             && mCallOnDismissListenerInThisOnDismiss
             && mCallOnDismissListener) {
             mShareData.config.onDismissListener.onDismiss();
         }
-        mShareData = null;
+        mShareData.release();
     }
     
     /**
      * 是否全屏显示
      */
     private boolean isFullScreen() {
-        if (mShareData != null && mShareData.config.fullScreen != null) {
+        if (mShareData.config.fullScreen != null) {
             return mShareData.config.fullScreen;
         }
         
@@ -206,13 +214,13 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     public void show(FragmentActivity activity, Config config, View thumbnailView) {
-        mShareData = new ShareData(config);
+        mShareData.applyConfig(config);
         mShareData.thumbnailView = thumbnailView;
         showInner(activity);
     }
     
     public void show(FragmentActivity activity, Config config, @NonNull IFindThumbnailView findThumbnailView) {
-        mShareData = new ShareData(config);
+        mShareData.applyConfig(config);
         mShareData.findThumbnailView = findThumbnailView;
         showInner(activity);
     }
@@ -242,7 +250,6 @@ public class PreviewDialogFragment extends DialogFragment {
         
         mCallOnDismissListener = callBack;
         if (mViewPager == null) {
-            
             mCallOnDismissListenerInThisOnDismiss = true;
             dismissAllowingStateLoss();
         } else {

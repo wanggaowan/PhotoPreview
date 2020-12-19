@@ -8,6 +8,7 @@ import com.wgw.photo.preview.PhotoPreviewFragment.OnOpenListener;
 import com.wgw.photo.preview.interfaces.IFindThumbnailView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * 整个预览库都需要共享的数据
@@ -17,31 +18,36 @@ import androidx.annotation.NonNull;
 class ShareData {
     
     @NonNull
-    final Config config;
+    final Config config = new Config();
     
     /**
      * 打开预览时的缩略图
      */
+    @Nullable
     View thumbnailView;
     
     /**
      * 获取指定位置的缩略图
      */
+    @Nullable
     IFindThumbnailView findThumbnailView;
     
     /**
      * 图片长按监听
      */
+    @Nullable
     OnLongClickListener onLongClickListener;
     
     /**
      * 预览退出监听
      */
+    @Nullable
     OnExitListener onExitListener;
     
     /**
      * 预览打开监听
      */
+    @Nullable
     OnOpenListener onOpenListener;
     
     /**
@@ -54,5 +60,18 @@ class ShareData {
      */
     boolean isFirstCreate = true;
     
-    ShareData(@NonNull Config config) {this.config = config;}
+    void applyConfig(Config config) {
+        this.config.apply(config);
+    }
+    
+    void release() {
+        config.release();
+        thumbnailView = null;
+        findThumbnailView = null;
+        onLongClickListener = null;
+        onExitListener = null;
+        onOpenListener = null;
+        showNeedAnim = false;
+        isFirstCreate = true;
+    }
 }

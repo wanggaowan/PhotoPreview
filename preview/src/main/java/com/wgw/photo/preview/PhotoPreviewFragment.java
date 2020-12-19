@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,9 +30,8 @@ import android.widget.ProgressBar;
 
 import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.github.chrisbanes.photoview.custom.PhotoViewAttacher;
+import com.wgw.photo.preview.interfaces.OnLongClickListener;
 import com.wgw.photo.preview.util.MatrixUtils;
-
-import java.util.Arrays;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -115,6 +113,7 @@ public class PhotoPreviewFragment extends Fragment {
     private ImageView mHelperView;
     private FrameLayout mHelperViewParent;
     
+    @Nullable
     private ShareData mShareData;
     private View mThumbnailView;
     private ScaleType mThumbnailViewScaleType;
@@ -196,8 +195,11 @@ public class PhotoPreviewFragment extends Fragment {
         });
         
         mPhotoView.setOnLongClickListener(v -> {
-            if (mShareData != null && mShareData.config.onLongClickListener != null) {
-                mShareData.config.onLongClickListener.onLongClick(mRoot);
+            if (mShareData != null) {
+                OnLongClickListener listener = mShareData.config.onLongClickListener;
+                if (listener != null) {
+                    listener.onLongClick(mRoot);
+                }
             }
             return true;
         });
@@ -214,46 +216,40 @@ public class PhotoPreviewFragment extends Fragment {
         }
         
         mShareData = ((PreviewDialogFragment) parentFragment).mShareData;
-        if (mShareData == null) {
-            initNoAnim();
-            return;
-        }
-        
         mRoot.setBackgroundColor(Color.TRANSPARENT);
         mPhotoView.setStartView(mPosition == 0);
         mPhotoView.setEndView(mShareData.config.sources == null
             || mShareData.config.sources.size() == 0
             || mShareData.config.sources.size() - 1 == mPosition);
         
-        mThumbnailView = getThumbnailView();
+        mThumbnailView = getThumbnailView(mShareData);
         if (mThumbnailView instanceof ImageView) {
             mThumbnailViewScaleType = ((ImageView) mThumbnailView).getScaleType();
         } else {
             mThumbnailViewScaleType = null;
         }
         
-        mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView);
+        mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
         mNeedInAnim = mAnimDuration > 0 && mShareData.showNeedAnim && mPosition == mShareData.config.defaultShowPosition;
         
-        loadData();
+        loadData(mShareData);
     }
     
-    private void loadData() {
-        initLoading();
+    private void loadData(ShareData shareData) {
+        initLoading(shareData);
         loadImage(mPhotoView);
         
         if (!mNeedInAnim) {
             initNoAnim();
-            if (mAnimDuration <= 0 && mShareData.onOpenListener != null) {
-                mShareData.onOpenListener.onStart();
-                mShareData.onOpenListener.onEnd();
+            if (mAnimDuration <= 0) {
+                callOnOpen(null);
             }
             return;
         }
         
         // 处理进入时的动画
         mNeedInAnim = false;
-        mShareData.showNeedAnim = false;
+        shareData.showNeedAnim = false;
         
         if (mThumbnailView == null) {
             enterAnimByScale();
@@ -280,17 +276,13 @@ public class PhotoPreviewFragment extends Fragment {
             public void onAnimationStart(Animator animation) {
                 mPhotoView.setVisibility(View.VISIBLE);
                 mHelperView.setVisibility(View.GONE);
-                if (mShareData.onOpenListener != null) {
-                    mShareData.onOpenListener.onStart();
-                }
+                callOnOpen(true);
             }
             
             @Override
             public void onAnimationEnd(Animator animation) {
                 mPhotoView.setMinimumScale(PhotoViewAttacher.DEFAULT_MIN_SCALE);
-                if (mShareData.onOpenListener != null) {
-                    mShareData.onOpenListener.onEnd();
-                }
+                callOnOpen(false);
             }
         });
         
@@ -330,18 +322,14 @@ public class PhotoPreviewFragment extends Fragment {
                         @Override
                         public void onTransitionStart(@NonNull Transition transition) {
                             doViewBgAnim(Color.BLACK, mAnimDuration, null);
-                            if (mShareData.onOpenListener != null) {
-                                mShareData.onOpenListener.onStart();
-                            }
+                            callOnOpen(true);
                         }
                         
                         @Override
                         public void onTransitionEnd(@NonNull Transition transition) {
                             mPhotoView.setVisibility(View.VISIBLE);
                             mHelperView.setVisibility(View.GONE);
-                            if (mShareData.onOpenListener != null) {
-                                mShareData.onOpenListener.onEnd();
-                            }
+                            callOnOpen(false);
                         }
                     });
                 TransitionManager.beginDelayedTransition(mRoot, transitionSet);
@@ -360,7 +348,7 @@ public class PhotoPreviewFragment extends Fragment {
      * 加载图片
      */
     private void loadImage(ImageView imageView) {
-        if (mShareData.config.imageLoader != null) {
+        if (mShareData != null && mShareData.config.imageLoader != null) {
             if (mShareData.config.sources != null && mPosition < mShareData.config.sources.size() && mPosition >= 0) {
                 mShareData.config.imageLoader.onLoadImage(mPosition, mShareData.config.sources.get(mPosition), imageView);
             } else {
@@ -382,7 +370,7 @@ public class PhotoPreviewFragment extends Fragment {
     /**
      * 初始化loading
      */
-    private void initLoading() {
+    private void initLoading(ShareData shareData) {
         mPhotoView.setOnMatrixChangeListener(this :: getPreviewDrawableSize);
         
         mPhotoView.setImageChangeListener(drawable -> {
@@ -399,27 +387,27 @@ public class PhotoPreviewFragment extends Fragment {
             }
         });
         
-        if (mShareData.config.delayShowProgressTime < 0) {
+        if (shareData.config.delayShowProgressTime < 0) {
             mLoading.setVisibility(View.GONE);
             return;
         }
         
-        if (mShareData.config.progressDrawable != null) {
-            mLoading.setIndeterminateDrawable(mShareData.config.progressDrawable);
+        if (shareData.config.progressDrawable != null) {
+            mLoading.setIndeterminateDrawable(shareData.config.progressDrawable);
         }
         
-        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && mShareData.config.progressColor != null) {
-            mLoading.setIndeterminateTintList(ColorStateList.valueOf(mShareData.config.progressColor));
+        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && shareData.config.progressColor != null) {
+            mLoading.setIndeterminateTintList(ColorStateList.valueOf(shareData.config.progressColor));
         }
         
-        mLoading.setVisibility(mShareData.config.delayShowProgressTime == 0 ? View.VISIBLE : View.GONE);
-        if (mShareData.config.defaultShowPosition > 0) {
+        mLoading.setVisibility(shareData.config.delayShowProgressTime == 0 ? View.VISIBLE : View.GONE);
+        if (shareData.config.defaultShowPosition > 0) {
             // 监听指定延迟后图片是否加载成功
             mPhotoView.postDelayed(() -> {
                 if (mPhotoView.getDrawable() == null) {
                     mLoading.setVisibility(View.VISIBLE);
                 }
-            }, mShareData.config.delayShowProgressTime);
+            }, shareData.config.delayShowProgressTime);
         }
     }
     
@@ -482,24 +470,16 @@ public class PhotoPreviewFragment extends Fragment {
         }
         
         if (mAnimDuration <= 0) {
-            if (mShareData.onExitListener != null) {
-                mShareData.onExitListener.onStart();
-                mShareData.onExitListener.onExit();
-            }
+            callOnExit(null);
             return true;
         }
         
         if (mPhotoView.getDrawable() == null) {
-            if (mShareData.onExitListener != null) {
-                mShareData.onExitListener.onStart();
-            }
-            
+            callOnExit(true);
             doViewBgAnim(Color.TRANSPARENT, mAnimDuration, new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (mShareData.onExitListener != null) {
-                        mShareData.onExitListener.onExit();
-                    }
+                    callOnExit(false);
                 }
             });
             return true;
@@ -516,15 +496,11 @@ public class PhotoPreviewFragment extends Fragment {
             set.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (mShareData.onExitListener != null) {
-                        mShareData.onExitListener.onExit();
-                    }
+                    callOnExit(false);
                 }
             });
             
-            if (mShareData.onExitListener != null) {
-                mShareData.onExitListener.onStart();
-            }
+            callOnExit(true);
             set.start();
             return true;
         }
@@ -572,9 +548,7 @@ public class PhotoPreviewFragment extends Fragment {
         
         getSrcViewSize(thumbnailView);
         getSrcViewLocation(thumbnailView);
-        if (mShareData.onExitListener != null) {
-            mShareData.onExitListener.onStart();
-        }
+        callOnExit(true);
         
         mHelperView.post(() -> {
             TransitionSet transitionSet = new TransitionSet()
@@ -586,9 +560,7 @@ public class PhotoPreviewFragment extends Fragment {
                 .addListener(new TransitionListenerAdapter() {
                     @Override
                     public void onTransitionEnd(@NonNull Transition transition) {
-                        if (mShareData.onExitListener != null) {
-                            mShareData.onExitListener.onExit();
-                        }
+                        callOnExit(false);
                     }
                     
                     @Override
@@ -630,9 +602,9 @@ public class PhotoPreviewFragment extends Fragment {
     /**
      * 获取动画时间
      */
-    private long getOpenAndExitAnimDuration(View thumbnailView) {
-        if (mShareData.config.animDuration != null) {
-            return mShareData.config.animDuration;
+    private long getOpenAndExitAnimDuration(View thumbnailView, ShareData shareData) {
+        if (shareData.config.animDuration != null) {
+            return shareData.config.animDuration;
         }
         
         if (thumbnailView instanceof ImageView) {
@@ -673,11 +645,11 @@ public class PhotoPreviewFragment extends Fragment {
      * 获取当前预览图对应的缩略图View,如果未找到则查找默认位置View
      */
     @Nullable
-    private View getThumbnailView() {
-        View view = getThumbnailViewNotDefault(mPosition);
+    private View getThumbnailView(ShareData shareData) {
+        View view = getThumbnailViewNotDefault(shareData, mPosition);
         if (view == null) {
-            if (mPosition != mShareData.config.defaultShowPosition) {
-                return getThumbnailViewNotDefault(mShareData.config.defaultShowPosition);
+            if (mPosition != shareData.config.defaultShowPosition) {
+                return getThumbnailViewNotDefault(shareData, shareData.config.defaultShowPosition);
             }
         }
         return view;
@@ -687,15 +659,15 @@ public class PhotoPreviewFragment extends Fragment {
      * 获取指定位置的缩略图
      */
     @Nullable
-    private View getThumbnailViewNotDefault(int position) {
+    private View getThumbnailViewNotDefault(ShareData shareData, int position) {
         if (mThumbnailView != null) {
             return mThumbnailView;
         }
         
-        if (mShareData.thumbnailView != null) {
-            return mShareData.thumbnailView;
-        } else if (mShareData.findThumbnailView != null) {
-            return mShareData.findThumbnailView.findView(position);
+        if (shareData.thumbnailView != null) {
+            return shareData.thumbnailView;
+        } else if (shareData.findThumbnailView != null) {
+            return shareData.findThumbnailView.findView(position);
         }
         
         return null;
@@ -709,7 +681,7 @@ public class PhotoPreviewFragment extends Fragment {
         mSrcViewSize[0] = 0;
         mSrcViewSize[1] = 0;
         mSrcViewDrawSize[0] = 0;
-        mSrcViewDrawSize[0] = 0;
+        mSrcViewDrawSize[1] = 0;
         
         if (view == null) {
             return;
@@ -742,8 +714,6 @@ public class PhotoPreviewFragment extends Fragment {
                 return;
             }
             
-            Log.e("xxx", "src parent size:" + width + ";" + height + ";" + parent.toString());
-            Log.e("xxx", "srcViewDrawSize size:" + Arrays.toString(mIntTemp));
             getSrcViewDrawSize(parent.getParent());
         }
     }
@@ -766,6 +736,44 @@ public class PhotoPreviewFragment extends Fragment {
         mRoot.getLocationOnScreen(mIntTemp);
         mSrcImageLocation[0] -= mIntTemp[0];
         mSrcImageLocation[1] -= mIntTemp[1];
+    }
+    
+    /**
+     * 预览界面打开时执行回调
+     */
+    private void callOnOpen(Boolean start) {
+        if (mShareData != null) {
+            OnOpenListener onOpenListener = mShareData.onOpenListener;
+            if (onOpenListener != null) {
+                if (start == null) {
+                    onOpenListener.onStart();
+                    onOpenListener.onEnd();
+                } else if (start) {
+                    onOpenListener.onStart();
+                } else {
+                    onOpenListener.onEnd();
+                }
+            }
+        }
+    }
+    
+    /**
+     * 预览界面关闭时执行回调
+     */
+    private void callOnExit(Boolean start) {
+        if (mShareData != null) {
+            OnExitListener onExitListener = mShareData.onExitListener;
+            if (onExitListener != null) {
+                if (start == null) {
+                    onExitListener.onStart();
+                    onExitListener.onExit();
+                } else if (start) {
+                    onExitListener.onStart();
+                } else {
+                    onExitListener.onExit();
+                }
+            }
+        }
     }
     
     /**
