@@ -7,8 +7,8 @@ android {
     defaultConfig {
         minSdkVersion versions.minSdkVersion
         targetSdkVersion versions.targetSdkVersion
-        versionCode 17
-        versionName "2.3.3"
+        versionCode 18
+        versionName "2.3.4"
     }
 
     buildTypes {
@@ -30,6 +30,7 @@ dependencies {
     implementation deps.appcompat
     implementation deps.recyclerview
     implementation deps.transition
+    implementation deps.cardview
     // 仅编译低版本，为了兼容大部分用户，本库仅使用GifDrawable类型判断
     compileOnly 'com.github.bumptech.glide:glide:3.3.0'
 }

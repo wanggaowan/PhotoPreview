@@ -9,6 +9,7 @@ ext.versions = versions
 def deps = [:]
 deps.appcompat = 'androidx.appcompat:appcompat:1.2.0'
 deps.constraintlayout = 'androidx.constraintlayout:constraintlayout:2.0.4'
+deps.cardview = 'androidx.cardview:cardview:1.0.0'
 deps.junit = 'junit:junit:4.12'
 deps.junitext = 'androidx.test.ext:junit:1.1.2'
 deps.espresso = 'androidx.test.espresso:espresso-core:3.3.0'

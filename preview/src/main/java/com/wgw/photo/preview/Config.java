@@ -38,6 +38,15 @@ public class Config {
     public int defaultShowPosition = 0;
     @Nullable
     public Long animDuration/*打开和退出预览时的过度动画时间*/;
+    /**
+     * 图形变换类型，可选值参考{@link ShapeTransformType}
+     */
+    @Nullable
+    public Integer shapeTransformType;
+    /**
+     * 图形变换设置为{@link ShapeTransformType#ROUND_RECT}时圆角半径
+     */
+    public int shapeCornerRadius = 0;
     
     public void apply(Config config) {
         if (config == null) {
@@ -58,6 +67,8 @@ public class Config {
         this.sources = config.sources;
         this.defaultShowPosition = config.defaultShowPosition;
         this.animDuration = config.animDuration;
+        this.shapeTransformType = config.shapeTransformType;
+        this.shapeCornerRadius = config.shapeCornerRadius;
     }
     
     void release() {
@@ -75,5 +86,7 @@ public class Config {
         this.sources = null;
         this.defaultShowPosition = 0;
         this.animDuration = null;
+        this.shapeTransformType = null;
+        this.shapeCornerRadius = 0;
     }
 }

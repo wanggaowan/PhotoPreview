@@ -146,6 +146,7 @@ public class PhotoPreviewFragment extends Fragment {
             mLoading = mRoot.findViewById(R.id.loading);
             initEvent();
         } else {
+            mHelperViewParent.setVisibility(View.INVISIBLE);
             mPhotoView.setVisibility(View.INVISIBLE);
             mPhotoView.setScaleLevels(
                 PhotoViewAttacher.DEFAULT_MIN_SCALE,
@@ -155,7 +156,6 @@ public class PhotoPreviewFragment extends Fragment {
             mHelperViewParent.setTranslationX(0);
             mHelperViewParent.setTranslationY(0);
             setViewSize(mHelperViewParent, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-            mHelperView.setVisibility(View.INVISIBLE);
             setViewSize(mHelperView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
         }
         
@@ -256,12 +256,12 @@ public class PhotoPreviewFragment extends Fragment {
             return;
         }
         
-        enterAnimByTransition(mThumbnailView);
+        enterAnimByTransition(mThumbnailView, shareData);
     }
     
     private void initNoAnim() {
         mRoot.setBackgroundColor(Color.BLACK);
-        mHelperView.setVisibility(View.GONE);
+        mHelperViewParent.setVisibility(View.INVISIBLE);
         mPhotoView.setVisibility(View.VISIBLE);
     }
     
@@ -275,7 +275,7 @@ public class PhotoPreviewFragment extends Fragment {
             @Override
             public void onAnimationStart(Animator animation) {
                 mPhotoView.setVisibility(View.VISIBLE);
-                mHelperView.setVisibility(View.GONE);
+                mHelperViewParent.setVisibility(View.INVISIBLE);
                 callOnOpen(true);
             }
             
@@ -293,9 +293,9 @@ public class PhotoPreviewFragment extends Fragment {
     /**
      * 使用Transition库实现过度动画
      */
-    private void enterAnimByTransition(final View thumbnailView) {
+    private void enterAnimByTransition(final View thumbnailView, final ShareData shareData) {
         mPhotoView.post(() -> {
-            mHelperView.setVisibility(View.VISIBLE);
+            mHelperViewParent.setVisibility(View.INVISIBLE);
             getSrcViewSize(thumbnailView);
             getSrcViewLocation(thumbnailView);
             float fromX = mSrcImageLocation[0];
@@ -311,7 +311,8 @@ public class PhotoPreviewFragment extends Fragment {
             }
             setHelperViewImage();
             
-            mHelperView.post(() -> {
+            long delay = mHelperView.getDrawable() == null ? 100 : 0;
+            mHelperView.postDelayed(() -> {
                 TransitionSet transitionSet = new TransitionSet()
                     .setDuration(mAnimDuration)
                     .addTransition(new ChangeBounds())
@@ -321,6 +322,7 @@ public class PhotoPreviewFragment extends Fragment {
                     .addListener(new TransitionListenerAdapter() {
                         @Override
                         public void onTransitionStart(@NonNull Transition transition) {
+                            mHelperViewParent.setVisibility(View.VISIBLE);
                             doViewBgAnim(Color.BLACK, mAnimDuration, null);
                             callOnOpen(true);
                         }
@@ -328,11 +330,20 @@ public class PhotoPreviewFragment extends Fragment {
                         @Override
                         public void onTransitionEnd(@NonNull Transition transition) {
                             mPhotoView.setVisibility(View.VISIBLE);
-                            mHelperView.setVisibility(View.GONE);
+                            mHelperViewParent.setVisibility(View.INVISIBLE);
                             callOnOpen(false);
                         }
                     });
-                TransitionManager.beginDelayedTransition(mRoot, transitionSet);
+                
+                if (shareData.config.shapeTransformType != null) {
+                    if (shareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
+                        transitionSet.addTransition(new ChangeShape(Math.min(mSrcViewSize[0], mSrcViewSize[1]) / 2f, 0));
+                    } else {
+                        transitionSet.addTransition(new ChangeShape(shareData.config.shapeCornerRadius, 0));
+                    }
+                }
+                
+                TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
                 
                 mHelperViewParent.setTranslationX(0);
                 mHelperViewParent.setTranslationY(0);
@@ -340,7 +351,7 @@ public class PhotoPreviewFragment extends Fragment {
                 
                 mHelperView.setScaleType(ScaleType.FIT_CENTER);
                 setViewSize(mHelperView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-            });
+            }, delay);
         });
     }
     
@@ -513,8 +524,6 @@ public class PhotoPreviewFragment extends Fragment {
      * 使用Transition库实现过度动画
      */
     private void exitAnimByTransition(final View thumbnailView) {
-        mHelperView.setVisibility(View.VISIBLE);
-        mPhotoView.setVisibility(View.INVISIBLE);
         if (mThumbnailViewScaleType == ScaleType.MATRIX || mPhotoView.getScale() < 1) {
             // thumbnailView是ScaleType.MATRIX需要执行以下逻辑，不清楚MATRIX规则
             // 目前发现在关闭时，只要mIvAnim宽高设计成实际绘制Drawable相等宽高则过度动画没问题
@@ -565,11 +574,21 @@ public class PhotoPreviewFragment extends Fragment {
                     
                     @Override
                     public void onTransitionStart(@NonNull Transition transition) {
+                        mPhotoView.setVisibility(View.INVISIBLE);
+                        mHelperViewParent.setVisibility(View.VISIBLE);
                         doViewBgAnim(Color.TRANSPARENT, mAnimDuration, null);
                     }
                 });
             
-            TransitionManager.beginDelayedTransition(mRoot, transitionSet);
+            if (mShareData != null && mShareData.config.shapeTransformType != null) {
+                if (mShareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
+                    transitionSet.addTransition(new ChangeShape(0, Math.min(mSrcViewSize[0], mSrcViewSize[1]) / 2f));
+                } else {
+                    transitionSet.addTransition(new ChangeShape(0, mShareData.config.shapeCornerRadius));
+                }
+            }
+            
+            TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
             
             mHelperViewParent.setTranslationX(mSrcImageLocation[0]);
             mHelperViewParent.setTranslationY(mSrcImageLocation[1]);

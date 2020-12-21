@@ -227,6 +227,22 @@ public class PhotoPreview {
     }
     
     /**
+     * 设置图形变换类型，比如缩列图是圆形或圆角矩形
+     *
+     * @param shapeTransformType 目前仅提供{@link ShapeTransformType#CIRCLE}和{@link ShapeTransformType#ROUND_RECT}
+     */
+    public void setShapeTransformType(@ShapeTransformType int shapeTransformType) {
+        mConfig.shapeTransformType = shapeTransformType;
+    }
+    
+    /**
+     * 仅当{@link #setShapeTransformType(int)}设置为{@link ShapeTransformType#ROUND_RECT}时，此值配置圆角矩形圆角半径
+     */
+    public void setShapeCornerRadius(int radius) {
+        mConfig.shapeCornerRadius = radius;
+    }
+    
+    /**
      * 不设置缩略图，预览界面打开关闭将只有从中心缩放动画
      */
     public void show() {
@@ -291,6 +307,12 @@ public class PhotoPreview {
         
         if (mConfig.imageLoader == null) {
             mConfig.imageLoader = globalImageLoader;
+        }
+        
+        if (mConfig.shapeTransformType != null
+            && mConfig.shapeTransformType != ShapeTransformType.CIRCLE
+            && mConfig.shapeTransformType != ShapeTransformType.ROUND_RECT) {
+            mConfig.shapeTransformType = null;
         }
     }
     
@@ -464,6 +486,24 @@ public class PhotoPreview {
          */
         public Builder maxIndicatorDot(int maxSize) {
             mConfig.maxIndicatorDot = maxSize;
+            return this;
+        }
+        
+        /**
+         * 设置图形变换类型，比如缩列图是圆形或圆角矩形
+         *
+         * @param shapeTransformType 目前仅提供{@link ShapeTransformType#CIRCLE}和{@link ShapeTransformType#ROUND_RECT}
+         */
+        public Builder shapeTransformType(@ShapeTransformType int shapeTransformType) {
+            mConfig.shapeTransformType = shapeTransformType;
+            return this;
+        }
+        
+        /**
+         * 仅当{@link #shapeTransformType(int)}设置为{@link ShapeTransformType#ROUND_RECT}时，此值配置圆角矩形圆角半径
+         */
+        public Builder shapeCornerRadius(int radius) {
+            mConfig.shapeCornerRadius = radius;
             return this;
         }
         
