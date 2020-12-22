@@ -34,6 +34,15 @@ public class OSUtils {
         return check(ROM_MIUI);
     }
     
+    public static boolean isMI6() {
+        boolean check = check(ROM_MIUI);
+        if (check) {
+            return "MI 6".equals(Build.MODEL);
+        }
+        
+        return false;
+    }
+    
     public static boolean isVIVO() {
         return check(ROM_VIVO);
     }

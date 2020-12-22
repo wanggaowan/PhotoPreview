@@ -93,8 +93,14 @@ public class NotchAdapterUtils {
             0x00000100 | 0x00000400 横屏绘制到耳朵区
             0x00000100 | 0x00000200 | 0x00000400 横竖屏都绘制到耳朵区
          */
+    
+        int flag;
+        if (cutOutMode == CutOutMode.ALWAYS) {
+            flag = 0x00000100 | 0x00000200 | 0x00000400;
+        } else {
+            flag = 0x00000100 | 0x00000200;
+        }
         
-        int flag = 0x00000100 | 0x00000200 | 0x00000400;
         String methodName;
         if (cutOutMode == CutOutMode.NEVER) {
             methodName = "clearExtraFlags";

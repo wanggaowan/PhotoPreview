@@ -22,7 +22,6 @@ import android.graphics.Outline;
 import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -93,7 +92,6 @@ class ChangeShape extends Transition {
         private float radius = 0f;
         
         public void setRadius(float radius) {
-            Log.e("xxx", radius + "");
             this.radius = radius;
         }
         

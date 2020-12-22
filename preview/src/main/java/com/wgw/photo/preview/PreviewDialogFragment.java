@@ -29,6 +29,7 @@ import com.wgw.photo.preview.util.SpannableString;
 import com.wgw.photo.preview.util.Utils;
 import com.wgw.photo.preview.util.notch.CutOutMode;
 import com.wgw.photo.preview.util.notch.NotchAdapterUtils;
+import com.wgw.photo.preview.util.notch.OSUtils;
 
 import java.util.UUID;
 
@@ -121,7 +122,7 @@ public class PreviewDialogFragment extends DialogFragment {
         // 全屏处理
         window.requestFeature(Window.FEATURE_NO_TITLE);
         boolean fullScreen = isFullScreen();
-        NotchAdapterUtils.adapter(window, CutOutMode.SHORT_EDGES);
+        NotchAdapterUtils.adapter(window, CutOutMode.ALWAYS);
         super.onActivityCreated(null);
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -204,6 +205,13 @@ public class PreviewDialogFragment extends DialogFragment {
             return mShareData.config.fullScreen;
         }
         
+        return isParentFullScreen();
+    }
+    
+    /**
+     * 父窗口是否全屏显示
+     */
+    private boolean isParentFullScreen() {
         FragmentActivity activity = getActivity();
         if (activity == null || activity.getWindow() == null) {
             return true;
@@ -282,8 +290,34 @@ public class PreviewDialogFragment extends DialogFragment {
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
-        prepareIndicator();
-        prepareViewPager();
+        long delay = needDelayLoad();
+        if (delay > 0) {
+            mRootView.postDelayed(() -> {
+                prepareIndicator();
+                prepareViewPager();
+            }, delay);
+        } else {
+            prepareIndicator();
+            prepareViewPager();
+        }
+    }
+    
+    private long needDelayLoad() {
+        if (mShareData.config.fullScreen == null) {
+            // 预览是否全屏跟随父窗口
+            return 0;
+        }
+        
+        if (OSUtils.isMI6()) {
+            // 小米6手机从非全屏转化为全屏，或全屏转化为非全屏，此时状态栏退出有动画，预览界面不能立即充满，因此延迟等待
+            boolean previewFullScreen = mShareData.config.fullScreen;
+            boolean parentFullScreen = isParentFullScreen();
+            if ((previewFullScreen && !parentFullScreen)
+                || (!previewFullScreen && parentFullScreen)) {
+                return 350;
+            }
+        }
+        return 0;
     }
     
     private void initEvent() {

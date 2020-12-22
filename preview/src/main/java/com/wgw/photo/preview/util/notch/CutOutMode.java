@@ -14,7 +14,7 @@ import androidx.annotation.IntDef;
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.SOURCE)
-@IntDef({CutOutMode.DEFAULT, CutOutMode.SHORT_EDGES, CutOutMode.NEVER})
+@IntDef({CutOutMode.DEFAULT, CutOutMode.SHORT_EDGES, CutOutMode.NEVER, CutOutMode.ALWAYS})
 public @interface CutOutMode {
     /**
      * 默认模式，在全屏状态下，效果与{@link #NEVER}一致，在非全屏状态下，竖屏时绘制到耳朵区域，横屏时禁用耳朵区
@@ -30,4 +30,9 @@ public @interface CutOutMode {
      * 耳朵区域不绘制模式，此时全屏时，状态栏呈现黑条
      */
     int NEVER = 2;
+    
+    /**
+     * 横竖屏都绘制到耳朵区域
+     */
+    int ALWAYS = 3;
 }
