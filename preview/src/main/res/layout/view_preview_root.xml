@@ -6,12 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/transparent">
 
-    <com.wgw.photo.preview.PreloadImageView
-        android:id="@+id/iv_pre_load"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="invisible" />
-
     <com.wgw.photo.preview.NoTouchExceptionViewPager
         android:id="@+id/viewpager"
         android:layout_width="match_parent"
@@ -23,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="44dp"
         android:gravity="center"
         android:orientation="horizontal"
         android:visibility="gone"
@@ -34,7 +28,7 @@
         android:layout_width="7dp"
         android:layout_height="7dp"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="44dp"
         android:src="@drawable/selected_dot"
         android:visibility="gone"
         tools:ignore="ContentDescription"
@@ -45,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="36dp"
+        android:layout_marginBottom="40dp"
         android:gravity="center"
         android:textColor="@android:color/darker_gray"
         android:textSize="14sp"

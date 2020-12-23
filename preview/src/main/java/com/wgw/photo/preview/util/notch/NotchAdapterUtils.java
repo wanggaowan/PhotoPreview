@@ -2,17 +2,16 @@ package com.wgw.photo.preview.util.notch;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Rect;
 import android.os.Build;
 import android.view.DisplayCutout;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.List;
 
 import androidx.annotation.RequiresApi;
 
@@ -34,13 +33,18 @@ public class NotchAdapterUtils {
             return;
         }
         
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // OPPO 通过windowInsets.getDisplayCutout() 拿不到 DisplayCutout，始终返回null
+            // 因此只要 androidP以上就适配，不管是否是异形屏
+            adapterP(window, cutOutMode);
+            return;
+        }
+        
         if (!isNotch(window)) {
             return;
         }
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            adapterP(window, cutOutMode);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             adapterO(window, cutOutMode);
         }
     }
@@ -53,9 +57,15 @@ public class NotchAdapterUtils {
         if (window == null) {
             return;
         }
-        
         WindowManager.LayoutParams lp = window.getAttributes();
-        lp.layoutInDisplayCutoutMode = cutOutMode;
+        if (cutOutMode == CutOutMode.DEFAULT) {
+            lp.layoutInDisplayCutoutMode = LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
+        } else if (cutOutMode == CutOutMode.SHORT_EDGES || cutOutMode == CutOutMode.ALWAYS) {
+            lp.layoutInDisplayCutoutMode = LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        } else {
+            lp.layoutInDisplayCutoutMode = LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+        }
+        
         window.setAttributes(lp);
     }
     
@@ -93,7 +103,7 @@ public class NotchAdapterUtils {
             0x00000100 | 0x00000400 横屏绘制到耳朵区
             0x00000100 | 0x00000200 | 0x00000400 横竖屏都绘制到耳朵区
          */
-    
+        
         int flag;
         if (cutOutMode == CutOutMode.ALWAYS) {
             flag = 0x00000100 | 0x00000200 | 0x00000400;
@@ -175,10 +185,7 @@ public class NotchAdapterUtils {
             if (windowInsets != null) {
                 DisplayCutout displayCutout = windowInsets.getDisplayCutout();
                 if (displayCutout != null) {
-                    List<Rect> rects = displayCutout.getBoundingRects();
-                    if (rects != null && rects.size() > 0) {
-                        isNotchScreen = true;
-                    }
+                    isNotchScreen = true;
                 }
             }
             return isNotchScreen;

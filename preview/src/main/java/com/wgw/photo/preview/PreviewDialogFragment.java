@@ -8,7 +8,8 @@ import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -62,7 +63,6 @@ public class PreviewDialogFragment extends DialogFragment {
     private final String tag = UUID.randomUUID().toString();
     
     private FrameLayout mRootView;
-    private PreloadImageView mIvPreload;
     private NoTouchExceptionViewPager mViewPager;
     private LinearLayout mLlDotIndicator;
     private ImageView mIvSelectDot;
@@ -121,27 +121,55 @@ public class PreviewDialogFragment extends DialogFragment {
         Window window = getDialog().getWindow();
         // 全屏处理
         window.requestFeature(Window.FEATURE_NO_TITLE);
-        boolean fullScreen = isFullScreen();
+        // 无论是否全屏显示，都允许内容绘制到耳朵区域
         NotchAdapterUtils.adapter(window, CutOutMode.ALWAYS);
         super.onActivityCreated(null);
+        
+        boolean fullScreen = isFullScreen();
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
             // 需要设置这个才能设置状态栏和导航栏颜色，此时布局内容可绘制到状态栏之下
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.addFlags(LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(Color.TRANSPARENT);
+            window.setNavigationBarColor(Color.TRANSPARENT);
         }
         
-        WindowManager.LayoutParams lp = window.getAttributes();
+        LayoutParams lp = window.getAttributes();
         lp.dimAmount = 0;
-        lp.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        lp.flags |= LayoutParams.FLAG_DIM_BEHIND;
         if (fullScreen) {
-            lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            lp.flags |= LayoutParams.FLAG_FULLSCREEN;
         } else {
             lp.flags |= LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
         }
-        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.width = LayoutParams.MATCH_PARENT;
+        lp.height = LayoutParams.MATCH_PARENT;
         window.setAttributes(lp);
+        
+        // 沉浸式处理
+        // OPPO ANDROID P 之后的系统需要设置沉浸式配合异形屏适配才能将内容绘制到耳朵区域
+        if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN) {
+            // 防止系统栏隐藏时内容区域大小发生变化
+            int uiFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            // window全屏显示，但状态栏不会被隐藏，状态栏依然可见，内容可绘制到状态栏之下
+            uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+            // window全屏显示，但导航栏不会被隐藏，导航栏依然可见，内容可绘制到导航栏之下
+            uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+            if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+                // 对于OPPO ANDROID P 之后的系统,一定需要清除比标志，否则异形屏无法绘制到耳朵区域下面
+                window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                // 设置之后不会通过触摸屏幕调出导航栏
+                // uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE; // 通过系统上滑或者下滑拉出导航栏后不会自动隐藏
+                uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY; // 通过系统上滑或者下滑拉出导航栏后会自动隐藏
+            }
+            
+            if (fullScreen) {
+                // 隐藏状态栏
+                uiFlags |= View.INVISIBLE;
+            }
+            
+            window.getDecorView().setSystemUiVisibility(uiFlags);
+        }
     }
     
     @SuppressLint("InflateParams")
@@ -150,7 +178,6 @@ public class PreviewDialogFragment extends DialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         if (mRootView == null) {
             mRootView = (FrameLayout) inflater.inflate(R.layout.view_preview_root, null);
-            mIvPreload = mRootView.findViewById(R.id.iv_pre_load);
             mViewPager = mRootView.findViewById(R.id.viewpager);
             mLlDotIndicator = mRootView.findViewById(R.id.ll_dot_indicator_photo_preview);
             mIvSelectDot = mRootView.findViewById(R.id.iv_select_dot_photo_preview);
@@ -285,12 +312,12 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     private void initViewData() {
-        preloadDefaultPreviewImage();
         mCurrentPagerIndex = mShareData.config.defaultShowPosition;
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
         long delay = needDelayLoad();
+        setIndicatorVisible(false);
         if (delay > 0) {
             mRootView.postDelayed(() -> {
                 prepareIndicator();
@@ -330,6 +357,7 @@ public class PreviewDialogFragment extends DialogFragment {
             
             @Override
             public void onEnd() {
+                setIndicatorVisible(true);
                 mViewPager.setTouchEnable(true);
             }
         };
@@ -337,10 +365,8 @@ public class PreviewDialogFragment extends DialogFragment {
         mShareData.onExitListener = new PhotoPreviewFragment.OnExitListener() {
             @Override
             public void onStart() {
+                setIndicatorVisible(false);
                 mViewPager.setTouchEnable(false);
-                mLlDotIndicator.setVisibility(View.GONE);
-                mIvSelectDot.setVisibility(View.GONE);
-                mTvTextIndicator.setVisibility(View.GONE);
             }
             
             @Override
@@ -360,18 +386,6 @@ public class PreviewDialogFragment extends DialogFragment {
             }
             return false;
         };
-    }
-    
-    private void preloadDefaultPreviewImage() {
-        mIvPreload.post(() -> {
-            // 预加载默认预览界面预览图
-            if (mShareData.config.imageLoader != null) {
-                int position = mShareData.config.defaultShowPosition;
-                if (mShareData.config.sources != null && position < mShareData.config.sources.size() && position >= 0) {
-                    mShareData.config.imageLoader.onLoadImage(position, mShareData.config.sources.get(position), mIvPreload);
-                }
-            }
-        });
     }
     
     /**
@@ -467,13 +481,28 @@ public class PreviewDialogFragment extends DialogFragment {
                 mIvSelectDot.setLayoutParams(params);
                 float tx = (dotParams.rightMargin * mCurrentPagerIndex + childAt.getWidth() * mCurrentPagerIndex);
                 mIvSelectDot.setTranslationX(tx);
-                mIvSelectDot.setVisibility(View.VISIBLE);
             });
-            
-            mLlDotIndicator.setVisibility(View.VISIBLE);
         } else if (sourceSize > 1) {
-            mTvTextIndicator.setVisibility(View.VISIBLE);
             updateTextIndicator();
+        }
+    }
+    
+    private void setIndicatorVisible(boolean visible) {
+        int sourceSize = mShareData.config.sources == null ? 0 : mShareData.config.sources.size();
+        if (sourceSize >= 2 && sourceSize <= mShareData.config.maxIndicatorDot
+            && IndicatorType.DOT == mShareData.config.indicatorType) {
+            int visibility = visible ? View.VISIBLE : View.INVISIBLE;
+            mLlDotIndicator.setVisibility(visibility);
+            mIvSelectDot.setVisibility(visibility);
+            mTvTextIndicator.setVisibility(View.GONE);
+        } else if (sourceSize > 1) {
+            mLlDotIndicator.setVisibility(View.GONE);
+            mIvSelectDot.setVisibility(View.GONE);
+            mTvTextIndicator.setVisibility(visible ? View.VISIBLE : View.GONE);
+        } else {
+            mLlDotIndicator.setVisibility(View.GONE);
+            mIvSelectDot.setVisibility(View.GONE);
+            mTvTextIndicator.setVisibility(View.GONE);
         }
     }
     

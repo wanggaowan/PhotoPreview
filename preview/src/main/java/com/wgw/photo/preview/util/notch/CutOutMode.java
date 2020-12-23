@@ -22,7 +22,8 @@ public @interface CutOutMode {
     int DEFAULT = 0;
     
     /**
-     * 耳朵区域绘制模式，横竖屏内容都会延伸至耳朵区域
+     * 耳朵区域绘制模式，在androidP(包含)以上机型，横竖屏都绘制到耳朵区域。
+     * 此版本之下，小米手机只竖屏绘制到耳朵区域
      */
     int SHORT_EDGES = 1;
     
@@ -32,7 +33,7 @@ public @interface CutOutMode {
     int NEVER = 2;
     
     /**
-     * 横竖屏都绘制到耳朵区域
+     * 横竖屏都绘制到耳朵区域,如果可以单独设置的情况下
      */
     int ALWAYS = 3;
 }

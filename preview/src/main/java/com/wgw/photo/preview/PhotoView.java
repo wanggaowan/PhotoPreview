@@ -48,6 +48,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     private int mScaleVerticalScrollEdge = PhotoViewAttacher.VERTICAL_EDGE_INSIDE;
     // 记录缩放后水平方向边界判定值
     private int mScaleHorizontalScrollEdge = PhotoViewAttacher.HORIZONTAL_EDGE_INSIDE;
+    private OnScaleChangedListener mOnScaleChangedListener;
     
     public PhotoView(Context context) {
         this(context, null);
@@ -59,7 +60,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     
     public PhotoView(Context context, AttributeSet attr, int defStyle) {
         super(context, attr, defStyle);
-        setOnScaleChangeListener(this);
+        super.setOnScaleChangeListener(this);
         setOnViewDragListener(this);
         mScroller = new Scroller(context);
         mViewConfiguration = ViewConfiguration.get(context);
@@ -123,9 +124,17 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     }
     
     @Override
+    public void setOnScaleChangeListener(OnScaleChangedListener onScaleChangedListener) {
+        mOnScaleChangedListener = onScaleChangedListener;
+    }
+    
+    @Override
     public void onScaleChange(float scaleFactor, float focusX, float focusY) {
         mScaleVerticalScrollEdge = attacher.getVerticalScrollEdge();
         mScaleHorizontalScrollEdge = attacher.getHorizontalScrollEdge();
+        if (mOnScaleChangedListener != null) {
+            mOnScaleChangedListener.onScaleChange(scaleFactor, focusX, focusY);
+        }
     }
     
     @Override
