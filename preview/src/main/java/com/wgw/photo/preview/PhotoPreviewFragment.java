@@ -133,6 +133,10 @@ public class PhotoPreviewFragment extends Fragment {
     // 记录预览界面图片缩放倍率为1时图片真实绘制大小
     private final float[] mNoScaleImageActualSize = new float[2];
     private boolean mEnterAnimByTransitionStart = false;
+    /**
+     * 加载预览图时，总共加载次数
+     */
+    private int mImageLoadCount;
     
     @SuppressLint("InflateParams")
     @Nullable
@@ -298,36 +302,63 @@ public class PhotoPreviewFragment extends Fragment {
      * 使用Transition库实现过度动画
      */
     private void enterAnimByTransition(final View thumbnailView, final ShareData shareData) {
-        mPhotoView.post(() -> {
-            mHelperViewParent.setVisibility(View.INVISIBLE);
-            getSrcViewSize(thumbnailView);
-            getSrcViewLocation(thumbnailView);
-            float fromX = mSrcImageLocation[0];
-            float fromY = mSrcImageLocation[1];
-            
-            mHelperViewParent.setTranslationX(fromX);
-            mHelperViewParent.setTranslationY(fromY);
-            setViewSize(mHelperViewParent, mSrcViewDrawSize[0], mSrcViewDrawSize[1]);
-            
-            setViewSize(mHelperView, mSrcViewSize[0], mSrcViewSize[1]);
-            if (mThumbnailViewScaleType != null) {
-                mHelperView.setScaleType(mThumbnailViewScaleType);
+        mHelperViewParent.setVisibility(View.INVISIBLE);
+        long delay = mShareData.openAnimDelayTime;
+        if (delay > 0) {
+            mHelperView.postDelayed(() -> checkPreviewImageLoad(0), delay);
+            initEnterAnimByTransition(thumbnailView);
+        } else {
+            long enterAnimDelay = getEnterAnimDelay();
+            if (enterAnimDelay == 0) {
+                initEnterAnimByTransition(thumbnailView);
+                doEnterAnimByTransition(shareData);
+            } else {
+                mHelperView.postDelayed(() -> checkPreviewImageLoad(enterAnimDelay), enterAnimDelay);
+                initEnterAnimByTransition(thumbnailView);
             }
-            
-            long delay = getEnterAnimDelay();
-            mHelperView.postDelayed(() -> {
-                if (delay > 0) {
-                    long delay2 = getEnterAnimDelay();
-                    if (delay2 > 0) {
-                        mHelperView.postDelayed(() -> doEnterAnimByTransition(shareData), delay2);
-                    } else {
-                        doEnterAnimByTransition(shareData);
-                    }
-                } else {
-                    doEnterAnimByTransition(shareData);
-                }
-            }, delay);
-        });
+        }
+    }
+    
+    /**
+     * 初始化Transition所需内容
+     */
+    private void initEnterAnimByTransition(final View thumbnailView) {
+        getSrcViewSize(thumbnailView);
+        getSrcViewLocation(thumbnailView);
+        float fromX = mSrcImageLocation[0];
+        float fromY = mSrcImageLocation[1];
+        
+        mHelperViewParent.setTranslationX(fromX);
+        mHelperViewParent.setTranslationY(fromY);
+        setViewSize(mHelperViewParent, mSrcViewDrawSize[0], mSrcViewDrawSize[1]);
+        
+        setViewSize(mHelperView, mSrcViewSize[0], mSrcViewSize[1]);
+        if (mThumbnailViewScaleType != null) {
+            mHelperView.setScaleType(mThumbnailViewScaleType);
+        }
+    }
+    
+    /**
+     * 检查预览图片加载情况
+     */
+    private void checkPreviewImageLoad(long totalDelay) {
+        if (mShareData == null) {
+            enterAnimByScale();
+            return;
+        }
+        
+        if (totalDelay > 200) {
+            doEnterAnimByTransition(mShareData);
+            return;
+        }
+        
+        long delay = getEnterAnimDelay();
+        if (delay == 0) {
+            doEnterAnimByTransition(mShareData);
+            return;
+        }
+        
+        mHelperView.postDelayed(() -> checkPreviewImageLoad(delay + totalDelay), delay);
     }
     
     private void doEnterAnimByTransition(ShareData shareData) {
@@ -383,19 +414,19 @@ public class PhotoPreviewFragment extends Fragment {
      */
     private long getEnterAnimDelay() {
         if (mHelperView.getDrawable() == null) {
-            return 100;
+            return 50;
         }
         
         Drawable drawable = mHelperView.getDrawable();
         if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
-            return 100;
+            return 50;
         }
         
-        if (mThumbnailViewScaleType == ScaleType.CENTER_CROP) {
+        if (mThumbnailViewScaleType == ScaleType.CENTER_CROP && mImageLoadCount > 1) {
             Drawable drawable2 = ((ImageView) mThumbnailView).getDrawable();
             if (drawable2.getIntrinsicWidth() >= drawable.getIntrinsicWidth()
                 && drawable2.getIntrinsicHeight() >= drawable.getIntrinsicHeight()) {
-                return 100;
+                return 50;
             }
         }
         
@@ -433,6 +464,7 @@ public class PhotoPreviewFragment extends Fragment {
         
         mPhotoView.setImageChangeListener(drawable -> {
             if (drawable != null) {
+                mImageLoadCount++;
                 mLoading.setVisibility(View.GONE);
                 if (mAnimDuration <= 0) {
                     return;

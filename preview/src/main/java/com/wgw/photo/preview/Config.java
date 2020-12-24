@@ -47,6 +47,10 @@ public class Config {
      * 图形变换设置为{@link ShapeTransformType#ROUND_RECT}时圆角半径
      */
     public int shapeCornerRadius = 0;
+    /**
+     * 预览打开动画延迟执行时间
+     */
+    public long openAnimDelayTime = 0;
     
     public void apply(Config config) {
         if (config == null) {
@@ -69,6 +73,7 @@ public class Config {
         this.animDuration = config.animDuration;
         this.shapeTransformType = config.shapeTransformType;
         this.shapeCornerRadius = config.shapeCornerRadius;
+        this.openAnimDelayTime = config.openAnimDelayTime;
     }
     
     void release() {
@@ -88,5 +93,6 @@ public class Config {
         this.animDuration = null;
         this.shapeTransformType = null;
         this.shapeCornerRadius = 0;
+        this.openAnimDelayTime = 0;
     }
 }

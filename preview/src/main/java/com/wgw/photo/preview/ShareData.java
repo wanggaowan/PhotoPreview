@@ -60,6 +60,11 @@ class ShareData {
      */
     boolean isFirstCreate = true;
     
+    /**
+     * 预览打开动画延迟时间
+     */
+    long openAnimDelayTime;
+    
     void applyConfig(Config config) {
         this.config.apply(config);
     }
@@ -73,5 +78,6 @@ class ShareData {
         onOpenListener = null;
         showNeedAnim = false;
         isFirstCreate = true;
+        openAnimDelayTime = 0;
     }
 }

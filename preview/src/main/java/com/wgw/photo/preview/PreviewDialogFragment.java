@@ -316,23 +316,20 @@ public class PreviewDialogFragment extends DialogFragment {
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
-        long delay = needDelayLoad();
+        long delayLoadTime = getNeedDelayLoadTime();
+        mShareData.openAnimDelayTime = Math.max(mShareData.config.openAnimDelayTime, delayLoadTime);
         setIndicatorVisible(false);
-        if (delay > 0) {
-            mRootView.postDelayed(() -> {
-                prepareIndicator();
-                prepareViewPager();
-            }, delay);
-        } else {
-            prepareIndicator();
-            prepareViewPager();
-        }
+        prepareIndicator();
+        prepareViewPager();
     }
     
-    private long needDelayLoad() {
+    /**
+     * 获取需要延迟加载时间
+     */
+    private long getNeedDelayLoadTime() {
         if (mShareData.config.fullScreen == null) {
             // 预览是否全屏跟随父窗口
-            return 0;
+            return 100;
         }
         
         if (OSUtils.isMI6()) {
@@ -344,7 +341,7 @@ public class PreviewDialogFragment extends DialogFragment {
                 return 350;
             }
         }
-        return 0;
+        return 100;
     }
     
     private void initEvent() {

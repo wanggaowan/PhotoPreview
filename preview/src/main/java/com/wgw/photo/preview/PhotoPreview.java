@@ -243,6 +243,13 @@ public class PhotoPreview {
     }
     
     /**
+     * 设置预览动画延迟打开时间，对于低性能手机且预览动画出现卡顿时，才需要设置此值用以提供更连贯的动画效果
+     */
+    public void setOpenAnimDelayTime(long delay) {
+        mConfig.openAnimDelayTime = delay;
+    }
+    
+    /**
      * 不设置缩略图，预览界面打开关闭将只有从中心缩放动画
      */
     public void show() {
@@ -504,6 +511,14 @@ public class PhotoPreview {
          */
         public Builder shapeCornerRadius(int radius) {
             mConfig.shapeCornerRadius = radius;
+            return this;
+        }
+        
+        /**
+         * 设置预览动画延迟打开时间，对于低性能手机且预览动画出现卡顿时，才需要设置此值用以提供更连贯的动画效果
+         */
+        public Builder openAnimDelayTime(long delay) {
+            mConfig.openAnimDelayTime = delay;
             return this;
         }
         

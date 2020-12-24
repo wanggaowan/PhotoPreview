@@ -101,6 +101,7 @@ PhotoPreview
     .animDuration(400) // 动画时间，null：使用默认时间，<=0: 不执行动画
     .shapeTransformType(ShapeTransformType.CIRCLE) // 图形变换类型，针对缩略图是圆形或圆角矩形
     .shapeCornerRadius(50) // 仅当图形变换类型设置为ShapeTransformType.ROUND_RECT时，指定圆角矩形圆角半径
+    .openAnimDelayTime(100) // 仅建议对于低性能手机且预览动画出现卡顿时设置此值，用以提供更连贯的动画效果
     .build()
     .show(thumbnailView); // 展示预览，有show()、show(View)、show(IFindThumbnailView)三个重载
 ```
@@ -128,6 +129,7 @@ PhotoPreview.with(activity).build().dismiss();
       // .placeholder(placeholder)
       .into(thumbnailView);
    ```
+ 3. 对于低性能手机，如果缩略图控件所处嵌套太深，比如Activity嵌套Fragment，Fragment嵌套子Fragment，在子Fragment中预览图片，可能出现预览动画卡顿，此时建议设置`.openAnimDelayTime(100)`,用以提供更连贯的动画效果
 
 ## **感谢**
 
