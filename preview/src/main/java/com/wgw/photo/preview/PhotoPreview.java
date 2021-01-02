@@ -227,7 +227,7 @@ public class PhotoPreview {
     }
     
     /**
-     * 设置图形变换类型，比如缩列图是圆形或圆角矩形
+     * 设置缩略图图形变换类型，比如缩列图是圆形或圆角矩形
      *
      * @param shapeTransformType 目前仅提供{@link ShapeTransformType#CIRCLE}和{@link ShapeTransformType#ROUND_RECT}
      */
@@ -236,7 +236,7 @@ public class PhotoPreview {
     }
     
     /**
-     * 仅当{@link #setShapeTransformType(int)}设置为{@link ShapeTransformType#ROUND_RECT}时，此值配置圆角矩形圆角半径
+     * 仅当{@link #setShapeTransformType(int)}设置为{@link ShapeTransformType#ROUND_RECT}时，此值配置缩略图圆角矩形圆角半径
      */
     public void setShapeCornerRadius(int radius) {
         mConfig.shapeCornerRadius = radius;
@@ -497,7 +497,7 @@ public class PhotoPreview {
         }
         
         /**
-         * 设置图形变换类型，比如缩列图是圆形或圆角矩形
+         * 设置缩略图图形变换类型，比如缩列图是圆形或圆角矩形
          *
          * @param shapeTransformType 目前仅提供{@link ShapeTransformType#CIRCLE}和{@link ShapeTransformType#ROUND_RECT}
          */
@@ -507,7 +507,7 @@ public class PhotoPreview {
         }
         
         /**
-         * 仅当{@link #shapeTransformType(int)}设置为{@link ShapeTransformType#ROUND_RECT}时，此值配置圆角矩形圆角半径
+         * 仅当{@link #shapeTransformType(int)}设置为{@link ShapeTransformType#ROUND_RECT}时，此值配置缩略图圆角矩形圆角半径
          */
         public Builder shapeCornerRadius(int radius) {
             mConfig.shapeCornerRadius = radius;

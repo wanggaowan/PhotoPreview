@@ -31,6 +31,6 @@ dependencies {
     implementation deps.recyclerview
     implementation deps.transition
     implementation deps.cardview
-    // 仅编译低版本，为了兼容大部分用户，本库仅使用GifDrawable类型判断
-    compileOnly 'com.github.bumptech.glide:glide:3.3.0'
+    // 为了兼容大部分用户仅依赖低版本，本库仅使用GifDrawable类型判断
+    implementation 'com.github.bumptech.glide:glide:3.3.0'
 }

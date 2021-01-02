@@ -47,6 +47,7 @@ class ChangeShape extends Transition {
         private ViewOutlineProvider mProvider;
         private final float startValue;
         private final float endValue;
+        private float offset;
         
         /**
          * A constructor that takes an identifying name and {@link #getType() type} for the property.
@@ -58,12 +59,19 @@ class ChangeShape extends Transition {
             super(Float.class, "radius");
             this.startValue = startValue;
             this.endValue = endValue;
+            float maxValue = Math.max(startValue, endValue);
+            offset = 0.01f;
+            if (maxValue >= 20 && maxValue <= 30) {
+                offset += 0.005f + (30 - maxValue) * 0.001f;
+            } else {
+                offset = 0.2f;
+            }
         }
         
         @Override
         public void set(View view, Float value) {
-            if (value == null || (startValue <= endValue && value < endValue * 0.01) // 退出预览，此时圆角小于endValue * 0.01不做处理
-                || (startValue > endValue && value < startValue * 0.01)) { // 打开预览，此时圆角小于startValue * 0.01不做处理
+            if (value == null || (startValue <= endValue && value < endValue * offset) // 退出预览，此时圆角小于endValue * offset不做处理
+                || (startValue > endValue && value < startValue * offset)) { // 打开预览，此时圆角小于startValue * offset不做处理
                 // TODO: 12/21/20 wanggaowan 如果不做此判断，那么动画结束时会闪屏,目前不清楚为什么出现该情况
                 return;
             }
@@ -97,9 +105,16 @@ class ChangeShape extends Transition {
         
         @Override
         public void getOutline(View view, Outline outline) {
-            outline.setRoundRect(view.getLeft(), view.getTop(),
-                view.getLeft() + view.getWidth(),
-                view.getTop() + view.getHeight(),
+            // 采用此种裁剪方式，需要内容填满View，比如ImageView控件为正方形，设置缩放模式非完全填充，比如fit_center,
+            // 那么图片不是正方形时，此时图片无法完全占满ImageView控件，而此时裁剪是对ImageView进行裁剪，最终裁剪效果与
+            // 先裁剪图片再设置图片将不一致，比如Glide框架.后续待完善
+            int left = view.getLeft();
+            int top = view.getTop();
+            int width = view.getWidth();
+            int height = view.getHeight();
+            outline.setRoundRect(left, top,
+                left + width,
+                top + height,
                 radius);
         }
     }
