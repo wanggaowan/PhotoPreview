@@ -110,7 +110,7 @@ PhotoPreview.with(activity).build().dismiss();
 
 ### 待解决的问题(以下问题均基于Glide加载图片测试出现的问题)：
 1. 缩略图缩放类型为ScaleType.MATRIX时，如果不指定`.shapeTransformType(type)`,则过度动画打开和关闭可能都无法无缝衔接，指定后其实也是调整为其它缩放模式，因此缩略图尽量不使用ScaleType.MATRIX缩放类型
-2. 指定缩略图缩放类型为`.shapeTransformType(ShapeTransformType.CIRCLE)`时，如果缩略图宽高不相等，那么指定缩列图缩放类型为ScaleType.FIT_XY、ScaleType.CENTER_CROP后，预览动画不能无缝衔接
+2. 指定缩略图变换类型为`.shapeTransformType(ShapeTransformType.CIRCLE)`时，如果缩略图宽高不相等，那么指定缩列图缩放类型为ScaleType.FIT_XY、ScaleType.CENTER_CROP后，预览动画不能无缝衔接，因此需要切圆的缩列图，尽量保证控件宽高一致或使用其它缩放类型
 
 
 ## **感谢**
