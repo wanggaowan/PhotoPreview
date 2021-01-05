@@ -169,6 +169,7 @@ public class PreviewDialogFragment extends DialogFragment {
             }
             
             window.getDecorView().setSystemUiVisibility(uiFlags);
+            window.getDecorView().setPadding(0, 0, 0, 0);
         }
     }
     
