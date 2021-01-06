@@ -46,7 +46,7 @@ public class TestFragment extends Fragment {
         recyclerView.setAdapter(adapter);
         
         adapter.setOnItemClickListener((adapter1, view, position) ->
-            PhotoPreview.with(getActivity())
+            PhotoPreview.with(this)
                 .indicatorType(IndicatorType.TEXT)
                 .selectIndicatorColor(0xffEE3E3E)
                 .normalIndicatorColor(0xff3954A0)

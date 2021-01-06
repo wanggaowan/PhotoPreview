@@ -19,7 +19,9 @@ import java.util.Map;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.Lifecycle.Event;
 import androidx.lifecycle.Lifecycle.State;
@@ -33,7 +35,6 @@ import androidx.lifecycle.OnLifecycleEvent;
  *
  * @author Created by wanggaowan on 2019/2/26 0026 16:55
  */
-@SuppressWarnings("ConstantConditions")
 public class PhotoPreview {
     /**
      * 全局图片加载器
@@ -46,6 +47,7 @@ public class PhotoPreview {
     private static final Map<String, WeakReference<PreviewDialogFragment>> DIALOG_POOL = new HashMap<>();
     
     private final FragmentActivity mFragmentActivity;
+    private final Fragment mFragment;
     private final Config mConfig;
     
     /**
@@ -76,6 +78,27 @@ public class PhotoPreview {
         return fragment;
     }
     
+    private static PreviewDialogFragment getDialog(final Fragment parentFragment, boolean noneCreate) {
+        final String name = parentFragment.toString();
+        WeakReference<PreviewDialogFragment> reference = DIALOG_POOL.get(name);
+        PreviewDialogFragment fragment = reference == null ? null : reference.get();
+        if (fragment == null) {
+            if (noneCreate) {
+                fragment = new PreviewDialogFragment();
+                reference = new WeakReference<>(fragment);
+                DIALOG_POOL.put(name, reference);
+                parentFragment.getLifecycle().addObserver(new LifecycleObserver() {
+                    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                    public void onDestroy() {
+                        DIALOG_POOL.remove(name);
+                        parentFragment.getLifecycle().removeObserver(this);
+                    }
+                });
+            }
+        }
+        return fragment;
+    }
+    
     /**
      * 创建构建器，链式调用
      */
@@ -84,9 +107,18 @@ public class PhotoPreview {
         return new Builder(activity);
     }
     
+    /**
+     * 创建构建器，链式调用
+     */
+    public static Builder with(@NonNull Fragment fragment) {
+        assert fragment != null;
+        return new Builder(fragment);
+    }
+    
     public PhotoPreview(@NonNull Builder builder) {
         assert builder != null;
         mFragmentActivity = builder.activity;
+        mFragment = builder.fragment;
         mConfig = builder.mConfig;
     }
     
@@ -96,6 +128,17 @@ public class PhotoPreview {
     public PhotoPreview(@NonNull FragmentActivity activity) {
         assert activity != null;
         mFragmentActivity = activity;
+        mFragment = null;
+        mConfig = new Config();
+    }
+    
+    /**
+     * @param fragment 当前图片预览所处fragment
+     */
+    public PhotoPreview(@NonNull Fragment fragment) {
+        assert fragment != null;
+        mFragmentActivity = null;
+        mFragment = fragment;
         mConfig = new Config();
     }
     
@@ -243,7 +286,7 @@ public class PhotoPreview {
     }
     
     /**
-     * 设置预览动画延迟打开时间，对于低性能手机且预览动画出现卡顿时，才需要设置此值用以提供更连贯的动画效果
+     * 设置预览动画延迟打开时间，延迟的目的是为了等待动画需要数据加载完毕。只有在动画出现卡顿时才建议设置此值
      */
     public void setOpenAnimDelayTime(long delay) {
         mConfig.openAnimDelayTime = delay;
@@ -264,15 +307,18 @@ public class PhotoPreview {
      */
     public void show(final View thumbnailView) {
         correctConfig();
-        final PreviewDialogFragment fragment = getDialog(mFragmentActivity, true);
-        if (mFragmentActivity.getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
-            fragment.show(mFragmentActivity, mConfig, thumbnailView);
-        } else if (mFragmentActivity.getLifecycle().getCurrentState() != State.DESTROYED) {
-            mFragmentActivity.getLifecycle().addObserver(new LifecycleObserver() {
+        final PreviewDialogFragment fragment
+            = mFragment == null ? getDialog(mFragmentActivity, true) : getDialog(mFragment, true);
+        final Lifecycle lifecycle = mFragment == null ? mFragmentActivity.getLifecycle() : mFragment.getLifecycle();
+        final FragmentManager fragmentManager = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
+        if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
+            fragment.show(fragmentManager, mConfig, thumbnailView);
+        } else if (lifecycle.getCurrentState() != State.DESTROYED) {
+            lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
-                    fragment.show(mFragmentActivity, mConfig, thumbnailView);
-                    mFragmentActivity.getLifecycle().removeObserver(this);
+                    fragment.show(fragmentManager, mConfig, thumbnailView);
+                    lifecycle.removeObserver(this);
                 }
             });
         }
@@ -285,15 +331,18 @@ public class PhotoPreview {
      */
     public void show(final IFindThumbnailView findThumbnailView) {
         correctConfig();
-        final PreviewDialogFragment fragment = getDialog(mFragmentActivity, true);
-        if (mFragmentActivity.getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
-            fragment.show(mFragmentActivity, mConfig, findThumbnailView);
-        } else if (mFragmentActivity.getLifecycle().getCurrentState() != State.DESTROYED) {
-            mFragmentActivity.getLifecycle().addObserver(new LifecycleObserver() {
+        final PreviewDialogFragment fragment
+            = mFragment == null ? getDialog(mFragmentActivity, true) : getDialog(mFragment, true);
+        final Lifecycle lifecycle = mFragment == null ? mFragmentActivity.getLifecycle() : mFragment.getLifecycle();
+        final FragmentManager fragmentManager = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
+        if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
+            fragment.show(fragmentManager, mConfig, findThumbnailView);
+        } else if (lifecycle.getCurrentState() != State.DESTROYED) {
+            lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
-                    fragment.show(mFragmentActivity, mConfig, findThumbnailView);
-                    mFragmentActivity.getLifecycle().removeObserver(this);
+                    fragment.show(fragmentManager, mConfig, findThumbnailView);
+                    lifecycle.removeObserver(this);
                 }
             });
         }
@@ -344,10 +393,18 @@ public class PhotoPreview {
     
     public static class Builder {
         final FragmentActivity activity;
+        final Fragment fragment;
         Config mConfig;
         
         private Builder(FragmentActivity activity) {
             this.activity = activity;
+            this.fragment = null;
+            mConfig = new Config();
+        }
+        
+        private Builder(Fragment fragment) {
+            this.fragment = fragment;
+            this.activity = null;
             mConfig = new Config();
         }
         
@@ -513,9 +570,9 @@ public class PhotoPreview {
             mConfig.shapeCornerRadius = radius;
             return this;
         }
-        
+    
         /**
-         * 设置预览动画延迟打开时间，对于低性能手机且预览动画出现卡顿时，才需要设置此值用以提供更连贯的动画效果
+         * 设置预览动画延迟打开时间，延迟的目的是为了等待动画需要数据加载完毕。只有在动画出现卡顿时才建议设置此值
          */
         public Builder openAnimDelayTime(long delay) {
             mConfig.openAnimDelayTime = delay;

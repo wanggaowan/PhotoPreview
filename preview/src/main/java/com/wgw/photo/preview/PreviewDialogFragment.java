@@ -1,6 +1,7 @@
 package com.wgw.photo.preview;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -137,11 +138,16 @@ public class PreviewDialogFragment extends DialogFragment {
         LayoutParams lp = window.getAttributes();
         lp.dimAmount = 0;
         lp.flags |= LayoutParams.FLAG_DIM_BEHIND;
-        if (fullScreen) {
-            lp.flags |= LayoutParams.FLAG_FULLSCREEN;
-        } else {
-            lp.flags |= LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
+        
+        if (mShareData.config.fullScreen == null) {
+            // 跟随父窗口
+            if (fullScreen) {
+                lp.flags |= LayoutParams.FLAG_FULLSCREEN;
+            } else {
+                lp.flags |= LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
+            }
         }
+        
         lp.width = LayoutParams.MATCH_PARENT;
         lp.height = LayoutParams.MATCH_PARENT;
         window.setAttributes(lp);
@@ -156,20 +162,45 @@ public class PreviewDialogFragment extends DialogFragment {
             // window全屏显示，但导航栏不会被隐藏，导航栏依然可见，内容可绘制到导航栏之下
             uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
             if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
-                // 对于OPPO ANDROID P 之后的系统,一定需要清除比标志，否则异形屏无法绘制到耳朵区域下面
+                // 对于OPPO ANDROID P 之后的系统,一定需要清除此标志，否则异形屏无法绘制到耳朵区域下面
                 window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
                 // 设置之后不会通过触摸屏幕调出导航栏
                 // uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE; // 通过系统上滑或者下滑拉出导航栏后不会自动隐藏
                 uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY; // 通过系统上滑或者下滑拉出导航栏后会自动隐藏
             }
             
-            if (fullScreen) {
+            if (mShareData.config.fullScreen == null && fullScreen) {
                 // 隐藏状态栏
                 uiFlags |= View.INVISIBLE;
             }
             
             window.getDecorView().setSystemUiVisibility(uiFlags);
             window.getDecorView().setPadding(0, 0, 0, 0);
+        }
+    }
+    
+    /**
+     * 初始化是否全屏展示
+     */
+    private void initFullScreen() {
+        Dialog dialog = getDialog();
+        if (dialog == null) {
+            return;
+        }
+        
+        Window window = dialog.getWindow();
+        if (window == null) {
+            return;
+        }
+        
+        if (isFullScreen()) {
+            window.clearFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            window.addFlags(LayoutParams.FLAG_FULLSCREEN);
+            View decorView = window.getDecorView();
+            decorView.setSystemUiVisibility(decorView.getSystemUiVisibility() | View.INVISIBLE);
+        } else {
+            window.clearFlags(LayoutParams.FLAG_FULLSCREEN);
+            window.addFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
         }
     }
     
@@ -249,28 +280,27 @@ public class PreviewDialogFragment extends DialogFragment {
         return (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
     }
     
-    public void show(FragmentActivity activity, Config config, View thumbnailView) {
+    public void show(FragmentManager fragmentManager, Config config, View thumbnailView) {
         mShareData.applyConfig(config);
         mShareData.thumbnailView = thumbnailView;
-        showInner(activity);
+        showInner(fragmentManager);
     }
     
-    public void show(FragmentActivity activity, Config config, @NonNull IFindThumbnailView findThumbnailView) {
+    public void show(FragmentManager fragmentManager, Config config, @NonNull IFindThumbnailView findThumbnailView) {
         mShareData.applyConfig(config);
         mShareData.findThumbnailView = findThumbnailView;
-        showInner(activity);
+        showInner(fragmentManager);
     }
     
-    private void showInner(FragmentActivity activity) {
-        FragmentManager manager = activity.getSupportFragmentManager();
+    private void showInner(FragmentManager fragmentManager) {
         // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
         mShareData.showNeedAnim = true;
-        if (isAdded() || manager.findFragmentByTag(tag) != null || mAdd) {
+        if (isAdded() || fragmentManager.findFragmentByTag(tag) != null || mAdd) {
             initViewData();
             initEvent();
         } else {
             mAdd = true;
-            show(manager, tag);
+            show(fragmentManager, tag);
         }
     }
     
@@ -350,6 +380,8 @@ public class PreviewDialogFragment extends DialogFragment {
             
             @Override
             public void onStart() {
+                // 对于强制指定是否全屏，需要此处初始化状态栏隐藏逻辑，否则在MIUI系统上，从嵌套多层的Fragment预览会出现卡顿
+                initFullScreen();
                 mViewPager.setTouchEnable(false);
             }
             
