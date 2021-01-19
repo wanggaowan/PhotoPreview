@@ -69,10 +69,12 @@ public class PhotoPreview {
                 activity.getLifecycle().addObserver(new LifecycleObserver() {
                     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
                     public void onDestroy() {
-                        DIALOG_POOL.remove(name);
                         activity.getLifecycle().removeObserver(this);
+                        DIALOG_POOL.remove(name);
                     }
                 });
+            } else {
+                DIALOG_POOL.remove(name);
             }
         }
         return fragment;
@@ -90,10 +92,12 @@ public class PhotoPreview {
                 parentFragment.getLifecycle().addObserver(new LifecycleObserver() {
                     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
                     public void onDestroy() {
-                        DIALOG_POOL.remove(name);
                         parentFragment.getLifecycle().removeObserver(this);
+                        DIALOG_POOL.remove(name);
                     }
                 });
+            } else {
+                DIALOG_POOL.remove(name);
             }
         }
         return fragment;
@@ -310,15 +314,16 @@ public class PhotoPreview {
         final PreviewDialogFragment fragment
             = mFragment == null ? getDialog(mFragmentActivity, true) : getDialog(mFragment, true);
         final Lifecycle lifecycle = mFragment == null ? mFragmentActivity.getLifecycle() : mFragment.getLifecycle();
-        final FragmentManager fragmentManager = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
+        final FragmentManager fragmentManager
+            = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
         if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
             fragment.show(fragmentManager, mConfig, thumbnailView);
         } else if (lifecycle.getCurrentState() != State.DESTROYED) {
             lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
-                    fragment.show(fragmentManager, mConfig, thumbnailView);
                     lifecycle.removeObserver(this);
+                    fragment.show(fragmentManager, mConfig, thumbnailView);
                 }
             });
         }
@@ -334,15 +339,16 @@ public class PhotoPreview {
         final PreviewDialogFragment fragment
             = mFragment == null ? getDialog(mFragmentActivity, true) : getDialog(mFragment, true);
         final Lifecycle lifecycle = mFragment == null ? mFragmentActivity.getLifecycle() : mFragment.getLifecycle();
-        final FragmentManager fragmentManager = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
+        final FragmentManager fragmentManager
+            = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
         if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
             fragment.show(fragmentManager, mConfig, findThumbnailView);
         } else if (lifecycle.getCurrentState() != State.DESTROYED) {
             lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
-                    fragment.show(fragmentManager, mConfig, findThumbnailView);
                     lifecycle.removeObserver(this);
+                    fragment.show(fragmentManager, mConfig, findThumbnailView);
                 }
             });
         }
@@ -385,7 +391,8 @@ public class PhotoPreview {
      * @param callBack 是否需要执行{@link OnDismissListener}回调
      */
     public void dismiss(boolean callBack) {
-        PreviewDialogFragment fragment = getDialog(mFragmentActivity, false);
+        PreviewDialogFragment fragment
+            = mFragment == null ? getDialog(mFragmentActivity, false) : getDialog(mFragment, false);
         if (fragment != null) {
             fragment.dismiss(callBack);
         }
@@ -570,7 +577,7 @@ public class PhotoPreview {
             mConfig.shapeCornerRadius = radius;
             return this;
         }
-    
+        
         /**
          * 设置预览动画延迟打开时间，延迟的目的是为了等待动画需要数据加载完毕。只有在动画出现卡顿时才建议设置此值
          */

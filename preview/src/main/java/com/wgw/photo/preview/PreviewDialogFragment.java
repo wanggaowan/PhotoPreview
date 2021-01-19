@@ -2,6 +2,7 @@ package com.wgw.photo.preview;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -100,6 +101,11 @@ public class PreviewDialogFragment extends DialogFragment {
      * 是否在当前界面OnDismiss调用{@link OnDismissListener}
      */
     private boolean mCallOnDismissListenerInThisOnDismiss;
+    
+    /**
+     * 是否自己主动调用Dismiss(包括用户主动关闭、程序主动调用dismiss相关方法)
+     */
+    private Boolean mSelfDismissDialog;
     
     public PreviewDialogFragment() {
         setCancelable(false);
@@ -217,11 +223,11 @@ public class PreviewDialogFragment extends DialogFragment {
             mLlCustom = mRootView.findViewById(R.id.fl_custom);
         }
         
-        if (savedInstanceState == null) {
+        if (mSelfDismissDialog == null && savedInstanceState == null) {
             initViewData();
             initEvent();
             mDismiss = false;
-        } else {
+        } else if (savedInstanceState != null || !mSelfDismissDialog) {
             // 被回收后恢复，则关闭弹窗
             dismissAllowingStateLoss();
         }
@@ -230,8 +236,8 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     @Override
-    public void onDetach() {
-        super.onDetach();
+    public void onDestroyView() {
+        super.onDestroyView();
         mLlCustom.removeAllViews();
         if (mRootView != null) {
             ViewParent parent = mRootView.getParent();
@@ -240,11 +246,16 @@ public class PreviewDialogFragment extends DialogFragment {
                 ((ViewGroup) parent).removeView(mRootView);
             }
         }
+        
+        if (mSelfDismissDialog == null) {
+            mSelfDismissDialog = false;
+        }
     }
     
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
+        mSelfDismissDialog = null;
         mAdd = false;
         mDismiss = true;
         
@@ -282,19 +293,23 @@ public class PreviewDialogFragment extends DialogFragment {
     
     public void show(FragmentManager fragmentManager, Config config, View thumbnailView) {
         mShareData.applyConfig(config);
+        mShareData.findThumbnailView = null;
         mShareData.thumbnailView = thumbnailView;
         showInner(fragmentManager);
     }
     
-    public void show(FragmentManager fragmentManager, Config config, @NonNull IFindThumbnailView findThumbnailView) {
+    public void show(FragmentManager fragmentManager, Config config, IFindThumbnailView findThumbnailView) {
         mShareData.applyConfig(config);
+        mShareData.thumbnailView = null;
         mShareData.findThumbnailView = findThumbnailView;
         showInner(fragmentManager);
     }
     
     private void showInner(FragmentManager fragmentManager) {
+        mSelfDismissDialog = null;
+        mShareData.showNeedAnim = getDialog() == null || !getDialog().isShowing();
+        
         // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
-        mShareData.showNeedAnim = true;
         if (isAdded() || fragmentManager.findFragmentByTag(tag) != null || mAdd) {
             initViewData();
             initEvent();
@@ -310,10 +325,11 @@ public class PreviewDialogFragment extends DialogFragment {
      * @param callBack 是否需要执行{@link OnDismissListener}回调
      */
     public void dismiss(boolean callBack) {
-        if (mDismiss || !getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
+        if (mSelfDismissDialog != null || mDismiss || !getLifecycle().getCurrentState().isAtLeast(State.CREATED)) {
             return;
         }
         
+        mSelfDismissDialog = true;
         mCallOnDismissListener = callBack;
         if (mViewPager == null) {
             mCallOnDismissListenerInThisOnDismiss = true;
@@ -402,6 +418,11 @@ public class PreviewDialogFragment extends DialogFragment {
             @Override
             public void onExit() {
                 mViewPager.setTouchEnable(true);
+                if (mSelfDismissDialog != null) {
+                    return;
+                }
+                
+                mSelfDismissDialog = true;
                 OnDismissListener onDismissListener = mShareData.config.onDismissListener;
                 dismissAllowingStateLoss();
                 if (onDismissListener != null && mCallOnDismissListener) {
@@ -471,13 +492,14 @@ public class PreviewDialogFragment extends DialogFragment {
             && IndicatorType.DOT == mShareData.config.indicatorType) {
             mLlDotIndicator.removeAllViews();
             
+            Context context = requireContext();
             if (mShareData.config.selectIndicatorColor != 0xFFFFFFFF) {
                 Drawable drawable = mIvSelectDot.getDrawable();
                 GradientDrawable gradientDrawable;
                 if (drawable instanceof GradientDrawable) {
                     gradientDrawable = (GradientDrawable) drawable;
                 } else {
-                    gradientDrawable = (GradientDrawable) ContextCompat.getDrawable(getContext(), R.drawable.selected_dot);
+                    gradientDrawable = (GradientDrawable) ContextCompat.getDrawable(context, R.drawable.selected_dot);
                 }
                 
                 gradientDrawable.setColorFilter(mShareData.config.selectIndicatorColor, Mode.SRC_OVER);
@@ -489,12 +511,12 @@ public class PreviewDialogFragment extends DialogFragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
             
             // 未选中小圆点的间距
-            dotParams.rightMargin = Utils.dp2px(getContext(), 12);
+            dotParams.rightMargin = Utils.dp2px(context, 12);
             
             // 创建未选中的小圆点
             for (int i = 0; i < sourceSize; i++) {
-                AppCompatImageView iv = new AppCompatImageView(getContext());
-                GradientDrawable shapeDrawable = (GradientDrawable) ContextCompat.getDrawable(getContext(), R.drawable.no_selected_dot);
+                AppCompatImageView iv = new AppCompatImageView(context);
+                GradientDrawable shapeDrawable = (GradientDrawable) ContextCompat.getDrawable(context, R.drawable.no_selected_dot);
                 if (mShareData.config.normalIndicatorColor != 0xFFAAAAAA) {
                     shapeDrawable.setColorFilter(mShareData.config.normalIndicatorColor, Mode.SRC_OVER);
                 }

@@ -74,8 +74,8 @@ PhotoPreview
 全部配置
 ```java
 PhotoPreview
-    .with(activity) // 打开预览的界面(缩略图所处界面)
-    // .with(fragment) // 打开预览的界面(缩略图所处界面)
+    .with(activity) // 打开预览的界面(缩略图所处界面)，预览生命周期与activity绑定
+    // .with(fragment) // 打开预览的界面(缩略图所处界面)，预览生命周期与fragment绑定
     .config(config) // 应用其它配置，以下配置覆盖此config中对应的属性
     .imageLoader(imageLoader) // 图片加载器
     .indicatorType(IndicatorType.DOT) // 图片指示器类型(目前只有圆点和文本)，预览>=2张图片时有效
@@ -98,9 +98,13 @@ PhotoPreview
     .show(thumbnailView); // 展示预览，有show()、show(View)、show(IFindThumbnailView)三个重载
 ```
 
-预览库采用一个Activity持有一个对象，因此如果需要主动关闭预览，采用如下方式即可：
+预览库采用一个Activity/Fragment持有一个对象，因此如果需要主动关闭预览，采用如下方式即可：
 ```java
-PhotoPreview.with(activity).build().dismiss();
+PhotoPreview
+  .with(activity)
+  // .with(fragment)
+  .build()
+  .dismiss();
 ```
 
 ### 使用建议：

@@ -275,12 +275,10 @@ public class PhotoPreviewFragment extends Fragment {
         
         if (!mNeedInAnim) {
             initNoAnim();
-            if (mAnimDuration <= 0) {
-                // 整个预览无需执行动画，因此第一个执行的预览界面执行一次预览打开回调
-                if (mShareData.showNeedAnim) {
-                    callOnOpen(null);
-                }
-                mShareData.showNeedAnim = false;
+            // 整个预览无需执行动画，因此第一个执行的预览界面执行一次预览打开回调
+            if (shareData.config.defaultShowPosition == mPosition) {
+                callOnOpen(null);
+                shareData.showNeedAnim = false;
             }
             return;
         }
