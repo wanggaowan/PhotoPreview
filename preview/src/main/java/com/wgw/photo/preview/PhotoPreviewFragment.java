@@ -557,18 +557,18 @@ public class PhotoPreviewFragment extends Fragment {
      * 使用Transition库实现动画时，检测是否需要延迟，主要是缩放类型为ScaleType.CENTER_CROP时，等待最终图像的获取
      */
     private long getEnterAnimDelay() {
-        if (mHelperView.getDrawable() == null) {
+        Drawable drawable = mHelperView.getDrawable();
+        if (drawable == null) {
             return 50;
         }
         
-        Drawable drawable = mHelperView.getDrawable();
         if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
             return 50;
         }
         
         if (mImageLoadCount > 1) {
             Drawable drawable2 = ((ImageView) mThumbnailView).getDrawable();
-            if (drawable2.getIntrinsicWidth() >= drawable.getIntrinsicWidth()
+            if (drawable2 != null && drawable2.getIntrinsicWidth() >= drawable.getIntrinsicWidth()
                 && drawable2.getIntrinsicHeight() >= drawable.getIntrinsicHeight()) {
                 return 50;
             }
