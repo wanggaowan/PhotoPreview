@@ -405,17 +405,37 @@ public class PhotoPreviewFragment extends Fragment {
                 
                 case FIT_END:
                     mHelperView.setTranslationX(width - minSize);
-                    width = minSize;
                     mHelperView.setTranslationY(height - minSize);
+                    width = minSize;
                     height = minSize;
                     break;
                 
                 case FIT_CENTER:
-                case CENTER_INSIDE:
-                case CENTER:
                     mHelperView.setTranslationX((width - minSize) / 2f);
-                    width = minSize;
                     mHelperView.setTranslationY((height - minSize) / 2f);
+                    width = minSize;
+                    height = minSize;
+                    break;
+                
+                case CENTER_INSIDE:
+                    if (intrinsicWidth < width && intrinsicHeight < height) {
+                        minSize = Math.min(intrinsicWidth, intrinsicHeight);
+                    }
+                    
+                    mHelperView.setTranslationX((width - minSize) / 2f);
+                    mHelperView.setTranslationY((height - minSize) / 2f);
+                    width = minSize;
+                    height = minSize;
+                    break;
+                
+                case CENTER:
+                    int w = Math.min(intrinsicWidth, width);
+                    int h = Math.min(intrinsicHeight, height);
+                    minSize = Math.min(w, h);
+                    
+                    mHelperView.setTranslationX((width - minSize) / 2f);
+                    mHelperView.setTranslationY((height - minSize) / 2f);
+                    width = minSize;
                     height = minSize;
                     break;
             }
@@ -429,46 +449,121 @@ public class PhotoPreviewFragment extends Fragment {
         
         switch (mThumbnailViewScaleType) {
             case FIT_START:
-            case MATRIX:
-                if (intrinsicWidth < width) {
-                    width = intrinsicWidth;
-                }
-                
-                if (intrinsicHeight < height) {
-                    height = intrinsicHeight;
-                }
-                mHelperView.setScaleType(ScaleType.FIT_START);
-                break;
-            
             case FIT_END:
-                if (intrinsicWidth < width) {
-                    mHelperView.setTranslationX(width - intrinsicWidth);
+            case FIT_CENTER:
+            case CENTER_INSIDE:
+                if (intrinsicWidth < width && intrinsicHeight < height) {
+                    if (mThumbnailViewScaleType == ScaleType.CENTER_INSIDE) {
+                        mHelperView.setTranslationX((width - intrinsicWidth) / 2f);
+                        mHelperView.setTranslationY((height - intrinsicHeight) / 2f);
+                        width = intrinsicWidth;
+                        height = intrinsicHeight;
+                    } else {
+                        float widthScale = width * 1f / intrinsicWidth;
+                        float heightScale = height * 1f / intrinsicHeight;
+                        if (widthScale < heightScale) {
+                            // 根据宽度缩放值缩放高度，放大
+                            intrinsicHeight = (int) (widthScale * intrinsicHeight);
+                            if (mThumbnailViewScaleType == ScaleType.FIT_END) {
+                                mHelperView.setTranslationY(height - intrinsicHeight);
+                            } else if (mThumbnailViewScaleType == ScaleType.FIT_CENTER) {
+                                mHelperView.setTranslationY((height - intrinsicHeight) / 2f);
+                            }
+                            height = intrinsicHeight;
+                        } else if (widthScale > heightScale) {
+                            // 根据高度缩放值缩放宽度，放大
+                            intrinsicWidth = (int) (heightScale * intrinsicWidth);
+                            if (mThumbnailViewScaleType == ScaleType.FIT_END) {
+                                mHelperView.setTranslationX(width - intrinsicWidth);
+                            } else if (mThumbnailViewScaleType == ScaleType.FIT_CENTER) {
+                                mHelperView.setTranslationX((width - intrinsicWidth) / 2f);
+                            }
+                            width = intrinsicWidth;
+                        }
+                    }
+                } else if (intrinsicWidth > width && intrinsicHeight > height) {
+                    float widthScale = intrinsicWidth * 1f / width;
+                    float heightScale = intrinsicHeight * 1f / height;
+                    
+                    if (widthScale > heightScale) {
+                        // 根据宽度缩放值缩放高度，缩小
+                        intrinsicHeight = (int) (intrinsicHeight / widthScale);
+                        if (mThumbnailViewScaleType == ScaleType.FIT_END) {
+                            mHelperView.setTranslationY(height - intrinsicHeight);
+                        } else if (mThumbnailViewScaleType == ScaleType.FIT_CENTER
+                            || mThumbnailViewScaleType == ScaleType.CENTER_INSIDE) {
+                            mHelperView.setTranslationY((height - intrinsicHeight) / 2f);
+                        }
+                        height = intrinsicHeight;
+                    } else if (widthScale < heightScale) {
+                        // 根据高度缩放值缩放宽度，缩小
+                        intrinsicWidth = (int) (intrinsicWidth / heightScale);
+                        if (mThumbnailViewScaleType == ScaleType.FIT_END) {
+                            mHelperView.setTranslationX(width - intrinsicWidth);
+                        } else if (mThumbnailViewScaleType == ScaleType.FIT_CENTER
+                            || mThumbnailViewScaleType == ScaleType.CENTER_INSIDE) {
+                            mHelperView.setTranslationX((width - intrinsicWidth) / 2f);
+                        }
+                        width = intrinsicWidth;
+                    }
+                } else if (intrinsicWidth < width) {
+                    if (intrinsicHeight > height) {
+                        // 根据高度缩放值缩放宽度，缩小
+                        float heightScale = intrinsicHeight * 1f / height;
+                        intrinsicWidth = (int) (intrinsicWidth / heightScale);
+                    }
+                    
+                    if (mThumbnailViewScaleType == ScaleType.FIT_END) {
+                        mHelperView.setTranslationX(width - intrinsicWidth);
+                    } else if (mThumbnailViewScaleType == ScaleType.FIT_CENTER
+                        || mThumbnailViewScaleType == ScaleType.CENTER_INSIDE) {
+                        mHelperView.setTranslationX((width - intrinsicWidth) / 2f);
+                    }
                     width = intrinsicWidth;
-                }
-                
-                if (intrinsicHeight < height) {
-                    mHelperView.setTranslationY(height - intrinsicHeight);
+                } else {
+                    if (intrinsicWidth > width) {
+                        // 根据宽度缩放值缩放高度，缩小
+                        float widthScale = intrinsicWidth * 1f / width;
+                        intrinsicHeight = (int) (intrinsicHeight / widthScale);
+                    }
+                    
+                    if (mThumbnailViewScaleType == ScaleType.FIT_END) {
+                        mHelperView.setTranslationY(height - intrinsicHeight);
+                    } else if (mThumbnailViewScaleType == ScaleType.FIT_CENTER
+                        || mThumbnailViewScaleType == ScaleType.CENTER_INSIDE) {
+                        mHelperView.setTranslationY((height - intrinsicHeight) / 2f);
+                    }
                     height = intrinsicHeight;
                 }
+                
+                if (mThumbnailViewScaleType == ScaleType.FIT_CENTER
+                    || mThumbnailViewScaleType == ScaleType.CENTER_INSIDE) {
+                    // 需要重新设置缩放类型为CENTER_CROP，否则动画不会无缝衔接
+                    // 重新调整缩放类型，全部都是为了适配 Transition动画ChangeImageTransform过渡
+                    mHelperView.setScaleType(ScaleType.CENTER_CROP);
+                }
                 break;
             
-            case FIT_XY:
-                break;
-            
-            default:
-                if (intrinsicWidth < width) {
+            case CENTER:
+                if (width > intrinsicWidth) {
                     mHelperView.setTranslationX((width - intrinsicWidth) / 2f);
-                    width = intrinsicWidth;
                 }
                 
-                if (intrinsicHeight < height) {
+                if (height > intrinsicHeight) {
                     mHelperView.setTranslationY((height - intrinsicHeight) / 2f);
-                    height = intrinsicHeight;
                 }
                 
+                width = Math.min(intrinsicWidth, width);
+                height = Math.min(intrinsicHeight, height);
                 // 需要重新设置缩放类型为CENTER_CROP，否则动画不会无缝衔接
                 // 重新调整缩放类型，全部都是为了适配 Transition动画ChangeImageTransform过渡
                 mHelperView.setScaleType(ScaleType.CENTER_CROP);
+                break;
+            
+            case MATRIX:
+                width = Math.min(intrinsicWidth, width);
+                height = Math.min(intrinsicHeight, height);
+                mHelperView.setScaleType(ScaleType.FIT_START);
                 break;
         }
         
