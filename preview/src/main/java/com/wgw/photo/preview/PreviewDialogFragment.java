@@ -13,6 +13,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -291,21 +292,29 @@ public class PreviewDialogFragment extends DialogFragment {
         return (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0;
     }
     
-    public void show(FragmentManager fragmentManager, Config config, View thumbnailView) {
+    public void show(Context context, FragmentManager fragmentManager, Config config, View thumbnailView) {
         mShareData.applyConfig(config);
         mShareData.findThumbnailView = null;
         mShareData.thumbnailView = thumbnailView;
-        showInner(fragmentManager);
+        showInner(context, fragmentManager);
     }
     
-    public void show(FragmentManager fragmentManager, Config config, IFindThumbnailView findThumbnailView) {
+    public void show(Context context, FragmentManager fragmentManager, Config config, IFindThumbnailView findThumbnailView) {
         mShareData.applyConfig(config);
         mShareData.thumbnailView = null;
         mShareData.findThumbnailView = findThumbnailView;
-        showInner(fragmentManager);
+        showInner(context, fragmentManager);
     }
     
-    private void showInner(FragmentManager fragmentManager) {
+    private void showInner(Context context, FragmentManager fragmentManager) {
+        // 预加载启动图图片
+        PreloadImageView imageView = new PreloadImageView(context);
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(displayMetrics.widthPixels, displayMetrics.heightPixels);
+        imageView.setLayoutParams(params);
+        imageView.setDrawableLoadListener(drawable -> mShareData.preLoadDrawable = drawable);
+        loadImage(imageView);
+        
         mSelfDismissDialog = null;
         mShareData.showNeedAnim = getDialog() == null || !getDialog().isShowing();
         
@@ -316,6 +325,20 @@ public class PreviewDialogFragment extends DialogFragment {
         } else {
             mAdd = true;
             show(fragmentManager, tag);
+        }
+    }
+    
+    /**
+     * 加载图片
+     */
+    private void loadImage(ImageView imageView) {
+        if (mShareData != null && mShareData.config.imageLoader != null) {
+            int mPosition = mShareData.config.defaultShowPosition;
+            if (mShareData.config.sources != null && mPosition < mShareData.config.sources.size() && mPosition >= 0) {
+                mShareData.config.imageLoader.onLoadImage(mPosition, mShareData.config.sources.get(mPosition), imageView);
+            } else {
+                mShareData.config.imageLoader.onLoadImage(mPosition, null, imageView);
+            }
         }
     }
     
@@ -376,7 +399,7 @@ public class PreviewDialogFragment extends DialogFragment {
     private long getNeedDelayLoadTime() {
         if (mShareData.config.fullScreen == null) {
             // 预览是否全屏跟随父窗口
-            return 100;
+            return 0;
         }
         
         if (OSUtils.isMI6()) {
@@ -388,6 +411,7 @@ public class PreviewDialogFragment extends DialogFragment {
                 return 350;
             }
         }
+        
         return 100;
     }
     

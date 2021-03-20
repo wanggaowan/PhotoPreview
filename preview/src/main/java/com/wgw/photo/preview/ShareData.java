@@ -1,5 +1,6 @@
 package com.wgw.photo.preview;
 
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.View.OnLongClickListener;
 
@@ -65,6 +66,11 @@ class ShareData {
      */
     long openAnimDelayTime;
     
+    /**
+     * 预加载图片，加载内容为默认打开数据
+     */
+    Drawable preLoadDrawable;
+    
     void applyConfig(Config config) {
         this.config.apply(config);
     }
@@ -79,5 +85,6 @@ class ShareData {
         showNeedAnim = false;
         isFirstCreate = true;
         openAnimDelayTime = 0;
+        preLoadDrawable = null;
     }
 }

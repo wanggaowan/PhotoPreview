@@ -22,6 +22,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 public class PreloadImageView extends AppCompatImageView {
     
     private ImageView mActualView;
+    private DrawableLoadListener mListener;
     
     public PreloadImageView(@NonNull Context context) {
         super(context);
@@ -45,6 +46,10 @@ public class PreloadImageView extends AppCompatImageView {
         if (mActualView != null) {
             mActualView.setImageDrawable(drawable);
         }
+        
+        if (mListener != null) {
+            mListener.onLoad(drawable);
+        }
     }
     
     @Override
@@ -54,5 +59,13 @@ public class PreloadImageView extends AppCompatImageView {
     
     void setActualView(ImageView imageView) {
         mActualView = imageView;
+    }
+    
+    public void setDrawableLoadListener(DrawableLoadListener listener) {
+        mListener = listener;
+    }
+    
+    interface DrawableLoadListener {
+        void onLoad(Drawable drawable);
     }
 }

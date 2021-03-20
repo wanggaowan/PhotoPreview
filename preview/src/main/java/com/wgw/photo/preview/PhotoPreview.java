@@ -1,5 +1,6 @@
 package com.wgw.photo.preview;
 
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
@@ -317,13 +318,15 @@ public class PhotoPreview {
         final FragmentManager fragmentManager
             = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
         if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
-            fragment.show(fragmentManager, mConfig, thumbnailView);
+            Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
+            fragment.show(context, fragmentManager, mConfig, thumbnailView);
         } else if (lifecycle.getCurrentState() != State.DESTROYED) {
             lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
                     lifecycle.removeObserver(this);
-                    fragment.show(fragmentManager, mConfig, thumbnailView);
+                    Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
+                    fragment.show(context, fragmentManager, mConfig, thumbnailView);
                 }
             });
         }
@@ -342,13 +345,15 @@ public class PhotoPreview {
         final FragmentManager fragmentManager
             = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
         if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
-            fragment.show(fragmentManager, mConfig, findThumbnailView);
+            Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
+            fragment.show(context, fragmentManager, mConfig, findThumbnailView);
         } else if (lifecycle.getCurrentState() != State.DESTROYED) {
             lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
                     lifecycle.removeObserver(this);
-                    fragment.show(fragmentManager, mConfig, findThumbnailView);
+                    Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
+                    fragment.show(context, fragmentManager, mConfig, findThumbnailView);
                 }
             });
         }

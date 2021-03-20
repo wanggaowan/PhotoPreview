@@ -141,6 +141,8 @@ public class PhotoPreviewFragment extends Fragment {
     private int mImageLoadCount;
     // 辅助视图是否单独加载图片而不是依赖mPhotoView
     private boolean mHelpViewSelfLoadImage;
+    // 是否已经初始化预览图大小
+    private boolean mInitThumbSize = false;
     
     @SuppressLint("InflateParams")
     @Nullable
@@ -225,8 +227,7 @@ public class PhotoPreviewFragment extends Fragment {
         mPhotoView.setImageDrawable(null);
         Fragment parentFragment = getParentFragment();
         if (!(parentFragment instanceof PreviewDialogFragment)) {
-            initNoAnim();
-            return;
+            throw new RuntimeException("parent fragment is not PreviewDialogFragment");
         }
         
         mShareData = ((PreviewDialogFragment) parentFragment).mShareData;
@@ -338,8 +339,12 @@ public class PhotoPreviewFragment extends Fragment {
         } else {
             long enterAnimDelay = getEnterAnimDelay();
             if (enterAnimDelay == 0) {
-                initEnterAnimByTransition(thumbnailView);
-                doEnterAnimByTransition(shareData);
+                if (mInitThumbSize) {
+                    doEnterAnimByTransition(shareData);
+                } else {
+                    initEnterAnimByTransition(thumbnailView);
+                    mHelperView.post(() -> doEnterAnimByTransition(shareData));
+                }
             } else {
                 mHelperView.postDelayed(() -> checkPreviewImageLoad(enterAnimDelay), enterAnimDelay);
                 initEnterAnimByTransition(thumbnailView);
@@ -351,6 +356,7 @@ public class PhotoPreviewFragment extends Fragment {
      * 初始化Transition所需内容
      */
     private void initEnterAnimByTransition(final View thumbnailView) {
+        mInitThumbSize = true;
         getSrcViewSize(thumbnailView);
         getSrcViewLocation(thumbnailView);
         
@@ -659,6 +665,12 @@ public class PhotoPreviewFragment extends Fragment {
         
         if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
             return 50;
+        }
+        
+        if (mShareData.preLoadDrawable != null) {
+            mHelperView.setImageDrawable(mShareData.preLoadDrawable);
+            mShareData.preLoadDrawable = null;
+            return 0;
         }
         
         if (mImageLoadCount > 1) {
