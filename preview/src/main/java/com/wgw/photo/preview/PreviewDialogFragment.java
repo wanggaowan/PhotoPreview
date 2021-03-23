@@ -35,8 +35,6 @@ import com.wgw.photo.preview.util.notch.CutOutMode;
 import com.wgw.photo.preview.util.notch.NotchAdapterUtils;
 import com.wgw.photo.preview.util.notch.OSUtils;
 
-import java.util.UUID;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
@@ -63,7 +61,7 @@ public class PreviewDialogFragment extends DialogFragment {
     
     private static final int VIEW_PAGER_ID_NEXT = 23679;
     
-    private final String tag = UUID.randomUUID().toString();
+    static final String FRAGMENT_TAG = "PhotoPreview:59bd2d0f-8474-451d-9bee-3cca00182b31";
     
     private FrameLayout mRootView;
     private NoTouchExceptionViewPager mViewPager;
@@ -318,21 +316,29 @@ public class PreviewDialogFragment extends DialogFragment {
         mSelfDismissDialog = null;
         mShareData.showNeedAnim = getDialog() == null || !getDialog().isShowing();
         
-        // isAdded()并不一定靠谱，可能存在一定的延时性，因此通过查找manager是否存在当前对象来做进一步判断
-        if (isAdded() || fragmentManager.findFragmentByTag(tag) != null || mAdd) {
-            initViewData();
-            initEvent();
-        } else {
-            mAdd = true;
-            show(fragmentManager, tag);
+        if (isStateSaved()) {
+            dismissAllowingStateLoss();
+        } else if (isAdded() || mAdd) {
+            // isAdded()并不一定靠谱，可能存在一定的延时性，为此当前对象在创建时，已经优先返回fragmentManager存在的对象
+            // 对象获取逻辑查看PhotoPreview getDialog相关方法
+            if (!getLifecycle().getCurrentState().isAtLeast(State.INITIALIZED)) {
+                dismissAllowingStateLoss();
+            } else if (mRootView != null) {
+                initViewData();
+                initEvent();
+                return;
+            }
         }
+        
+        mAdd = true;
+        show(fragmentManager, FRAGMENT_TAG);
     }
     
     /**
      * 加载图片
      */
     private void loadImage(ImageView imageView) {
-        if (mShareData != null && mShareData.config.imageLoader != null) {
+        if (mShareData.config.imageLoader != null) {
             int mPosition = mShareData.config.defaultShowPosition;
             if (mShareData.config.sources != null && mPosition < mShareData.config.sources.size() && mPosition >= 0) {
                 mShareData.config.imageLoader.onLoadImage(mPosition, mShareData.config.sources.get(mPosition), imageView);

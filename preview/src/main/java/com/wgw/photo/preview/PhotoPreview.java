@@ -36,7 +36,9 @@ import androidx.lifecycle.OnLifecycleEvent;
  *
  * @author Created by wanggaowan on 2019/2/26 0026 16:55
  */
+@SuppressWarnings("ConstantConditions")
 public class PhotoPreview {
+    
     /**
      * 全局图片加载器
      */
@@ -59,6 +61,11 @@ public class PhotoPreview {
     }
     
     private static PreviewDialogFragment getDialog(final FragmentActivity activity, boolean noneCreate) {
+        Fragment fragmentByTag = activity.getSupportFragmentManager().findFragmentByTag(PreviewDialogFragment.FRAGMENT_TAG);
+        if (fragmentByTag instanceof PreviewDialogFragment) {
+            return (PreviewDialogFragment) fragmentByTag;
+        }
+        
         final String name = activity.toString();
         WeakReference<PreviewDialogFragment> reference = DIALOG_POOL.get(name);
         PreviewDialogFragment fragment = reference == null ? null : reference.get();
@@ -78,10 +85,16 @@ public class PhotoPreview {
                 DIALOG_POOL.remove(name);
             }
         }
+        
         return fragment;
     }
     
     private static PreviewDialogFragment getDialog(final Fragment parentFragment, boolean noneCreate) {
+        Fragment fragmentByTag = parentFragment.getChildFragmentManager().findFragmentByTag(PreviewDialogFragment.FRAGMENT_TAG);
+        if (fragmentByTag instanceof PreviewDialogFragment) {
+            return (PreviewDialogFragment) fragmentByTag;
+        }
+        
         final String name = parentFragment.toString();
         WeakReference<PreviewDialogFragment> reference = DIALOG_POOL.get(name);
         PreviewDialogFragment fragment = reference == null ? null : reference.get();
