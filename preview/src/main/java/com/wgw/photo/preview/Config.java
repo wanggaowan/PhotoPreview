@@ -48,9 +48,9 @@ public class Config {
      */
     public int shapeCornerRadius = 0;
     /**
-     * 预览打开动画延迟执行时间
+     * 是否等待预览图加载完成才执行预览打开动画
      */
-    public long openAnimDelayTime = 0;
+    public boolean waitDefaultPreviewImageLoaded = false;
     
     public void apply(Config config) {
         if (config == null) {
@@ -73,7 +73,7 @@ public class Config {
         this.animDuration = config.animDuration;
         this.shapeTransformType = config.shapeTransformType;
         this.shapeCornerRadius = config.shapeCornerRadius;
-        this.openAnimDelayTime = config.openAnimDelayTime;
+        this.waitDefaultPreviewImageLoaded = config.waitDefaultPreviewImageLoaded;
     }
     
     void release() {
@@ -93,6 +93,6 @@ public class Config {
         this.animDuration = null;
         this.shapeTransformType = null;
         this.shapeCornerRadius = 0;
-        this.openAnimDelayTime = 0;
+        this.waitDefaultPreviewImageLoaded = false;
     }
 }

@@ -332,12 +332,35 @@ public class PhotoPreviewFragment extends Fragment {
      */
     private void enterAnimByTransition(final View thumbnailView, final ShareData shareData) {
         mHelperViewParent.setVisibility(View.INVISIBLE);
-        long delay = mShareData.openAnimDelayTime;
+        long delay = shareData.openAnimDelayTime;
+        
+        if (!shareData.config.waitDefaultPreviewImageLoaded) {
+            initEnterAnimByTransition(thumbnailView);
+            if (delay > 0) {
+                mHelperView.postDelayed(() -> {
+                    if (shareData.preLoadDrawable != null) {
+                        mHelperView.setImageDrawable(shareData.preLoadDrawable);
+                        shareData.preLoadDrawable = null;
+                    }
+                    doEnterAnimByTransition(shareData);
+                }, delay);
+            } else {
+                mHelperView.post(() -> {
+                    if (shareData.preLoadDrawable != null) {
+                        mHelperView.setImageDrawable(shareData.preLoadDrawable);
+                        shareData.preLoadDrawable = null;
+                    }
+                    doEnterAnimByTransition(shareData);
+                });
+            }
+            return;
+        }
+        
         if (delay > 0) {
             mHelperView.postDelayed(() -> checkPreviewImageLoad(0), delay);
             initEnterAnimByTransition(thumbnailView);
         } else {
-            long enterAnimDelay = getEnterAnimDelay();
+            long enterAnimDelay = getEnterAnimDelay(shareData);
             if (enterAnimDelay == 0) {
                 if (mInitThumbSize) {
                     doEnterAnimByTransition(shareData);
@@ -590,7 +613,7 @@ public class PhotoPreviewFragment extends Fragment {
             return;
         }
         
-        long delay = getEnterAnimDelay();
+        long delay = getEnterAnimDelay(mShareData);
         if (delay == 0) {
             doEnterAnimByTransition(mShareData);
             return;
@@ -636,7 +659,7 @@ public class PhotoPreviewFragment extends Fragment {
             }
         }
         
-        if (getEnterAnimDelay() == 0) {
+        if (getEnterAnimDelay(shareData) == 0) {
             // ChangeImageTransform执行MATRIX变换，因此一定需要最终加载完成图片
             transitionSet.addTransition(new ChangeImageTransform().addTarget(mHelperView));
         }
@@ -657,7 +680,7 @@ public class PhotoPreviewFragment extends Fragment {
     /**
      * 使用Transition库实现动画时，检测是否需要延迟，主要是缩放类型为ScaleType.CENTER_CROP时，等待最终图像的获取
      */
-    private long getEnterAnimDelay() {
+    private long getEnterAnimDelay(ShareData shareData) {
         Drawable drawable = mHelperView.getDrawable();
         if (drawable == null) {
             return 50;
@@ -667,9 +690,9 @@ public class PhotoPreviewFragment extends Fragment {
             return 50;
         }
         
-        if (mShareData.preLoadDrawable != null) {
-            mHelperView.setImageDrawable(mShareData.preLoadDrawable);
-            mShareData.preLoadDrawable = null;
+        if (shareData.preLoadDrawable != null) {
+            mHelperView.setImageDrawable(shareData.preLoadDrawable);
+            shareData.preLoadDrawable = null;
             return 0;
         }
         

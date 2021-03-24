@@ -392,8 +392,7 @@ public class PreviewDialogFragment extends DialogFragment {
         mLlDotIndicator.setVisibility(View.GONE);
         mIvSelectDot.setVisibility(View.GONE);
         mTvTextIndicator.setVisibility(View.GONE);
-        long delayLoadTime = getNeedDelayLoadTime();
-        mShareData.openAnimDelayTime = Math.max(mShareData.config.openAnimDelayTime, delayLoadTime);
+        mShareData.openAnimDelayTime = getNeedDelayLoadTime();
         setIndicatorVisible(false);
         prepareIndicator();
         prepareViewPager();
@@ -408,17 +407,19 @@ public class PreviewDialogFragment extends DialogFragment {
             return 0;
         }
         
-        if (OSUtils.isMI6()) {
-            // 小米6手机从非全屏转化为全屏，或全屏转化为非全屏，此时状态栏退出有动画，预览界面不能立即充满，因此延迟等待
-            boolean previewFullScreen = mShareData.config.fullScreen;
-            boolean parentFullScreen = isParentFullScreen();
-            if ((previewFullScreen && !parentFullScreen)
-                || (!previewFullScreen && parentFullScreen)) {
+        boolean previewFullScreen = mShareData.config.fullScreen;
+        boolean parentFullScreen = isParentFullScreen();
+        if ((previewFullScreen && !parentFullScreen)
+            || (!previewFullScreen && parentFullScreen)) {
+            if (OSUtils.isMI6()) {
+                // 小米6手机从非全屏转化为全屏，或全屏转化为非全屏，此时状态栏退出有动画，预览界面不能立即充满，因此延迟等待
                 return 350;
+            } else {
+                return 100;
             }
         }
         
-        return 100;
+        return 0;
     }
     
     private void initEvent() {

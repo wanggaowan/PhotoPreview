@@ -304,10 +304,13 @@ public class PhotoPreview {
     }
     
     /**
-     * 设置预览动画延迟打开时间，延迟的目的是为了等待动画需要数据加载完毕。只有在动画出现卡顿时才建议设置此值
+     * 是否等待{@link Config#defaultShowPosition}预览图加载完成才执行预览动画，默认为false。
+     *
+     * @param wait 如果为true，则有较好的过渡动画，但是可能因为加载缓慢，预览打开有一定延迟，最长等待时间200ms
+     *             如果为false，则可以迅速打开预览界面，但是可能过渡动画不能无缝衔接
      */
-    public void setOpenAnimDelayTime(long delay) {
-        mConfig.openAnimDelayTime = delay;
+    public void setWaitDefaultPreviewImageLoaded(boolean wait) {
+        mConfig.waitDefaultPreviewImageLoaded = wait;
     }
     
     /**
@@ -597,10 +600,13 @@ public class PhotoPreview {
         }
         
         /**
-         * 设置预览动画延迟打开时间，延迟的目的是为了等待动画需要数据加载完毕。只有在动画出现卡顿时才建议设置此值
+         * 是否等待{@link Config#defaultShowPosition}预览图加载完成才执行预览动画，默认为false。
+         *
+         * @param wait 如果为true，则有较好的过渡动画，但是可能因为加载缓慢，预览打开有一定延迟，最长等待时间200ms
+         *             如果为false，则可以迅速打开预览界面，但是可能过渡动画不能无缝衔接
          */
-        public Builder openAnimDelayTime(long delay) {
-            mConfig.openAnimDelayTime = delay;
+        public Builder waitDefaultPreviewImageLoaded(boolean wait) {
+            mConfig.waitDefaultPreviewImageLoaded = wait;
             return this;
         }
         

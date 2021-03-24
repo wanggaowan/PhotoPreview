@@ -62,7 +62,7 @@ class ShareData {
     boolean isFirstCreate = true;
     
     /**
-     * 预览打开动画延迟时间
+     * 预览动画延迟执行时间
      */
     long openAnimDelayTime;
     
