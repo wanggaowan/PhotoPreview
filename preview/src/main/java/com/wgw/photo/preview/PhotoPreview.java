@@ -36,7 +36,6 @@ import androidx.lifecycle.OnLifecycleEvent;
  *
  * @author Created by wanggaowan on 2019/2/26 0026 16:55
  */
-@SuppressWarnings("ConstantConditions")
 public class PhotoPreview {
     
     /**
@@ -271,7 +270,7 @@ public class PhotoPreview {
      * 设置动画执行时间
      *
      * @param duration <ul>
-     *                 <li>null: 使用默认动画时间{@link PhotoPreviewFragment#getOpenAndExitAnimDuration(View)}</li>
+     *                 <li>null: 使用默认动画时间</li>
      *                 <li><=0: 不执行动画</li>
      *                 </ul>
      */
@@ -301,16 +300,6 @@ public class PhotoPreview {
      */
     public void setShapeCornerRadius(int radius) {
         mConfig.shapeCornerRadius = radius;
-    }
-    
-    /**
-     * 是否等待{@link Config#defaultShowPosition}预览图加载完成才执行预览动画，默认为false。
-     *
-     * @param wait 如果为true，则有较好的过渡动画，但是可能因为加载缓慢，预览打开有一定延迟，最长等待时间200ms
-     *             如果为false，则可以迅速打开预览界面，但是可能过渡动画不能无缝衔接
-     */
-    public void setWaitDefaultPreviewImageLoaded(boolean wait) {
-        mConfig.waitDefaultPreviewImageLoaded = wait;
     }
     
     /**
@@ -563,7 +552,7 @@ public class PhotoPreview {
          * 设置动画执行时间
          *
          * @param duration <ul>
-         *                 <li>null: 使用默认动画时间{@link PhotoPreviewFragment#getOpenAndExitAnimDuration(View)}</li>
+         *                 <li>null: 使用默认动画时间</li>
          *                 <li><=0: 不执行动画</li>
          *                 </ul>
          */
@@ -596,17 +585,6 @@ public class PhotoPreview {
          */
         public Builder shapeCornerRadius(int radius) {
             mConfig.shapeCornerRadius = radius;
-            return this;
-        }
-        
-        /**
-         * 是否等待{@link Config#defaultShowPosition}预览图加载完成才执行预览动画，默认为false。
-         *
-         * @param wait 如果为true，则有较好的过渡动画，但是可能因为加载缓慢，预览打开有一定延迟，最长等待时间200ms
-         *             如果为false，则可以迅速打开预览界面，但是可能过渡动画不能无缝衔接
-         */
-        public Builder waitDefaultPreviewImageLoaded(boolean wait) {
-            mConfig.waitDefaultPreviewImageLoaded = wait;
             return this;
         }
         

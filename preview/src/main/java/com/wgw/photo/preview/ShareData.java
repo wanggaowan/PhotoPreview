@@ -4,8 +4,9 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.View.OnLongClickListener;
 
-import com.wgw.photo.preview.PhotoPreviewFragment.OnExitListener;
-import com.wgw.photo.preview.PhotoPreviewFragment.OnOpenListener;
+import com.wgw.photo.preview.PhotoPreviewHelper.OnExitListener;
+import com.wgw.photo.preview.PhotoPreviewHelper.OnOpenListener;
+import com.wgw.photo.preview.PreloadImageView.DrawableLoadListener;
 import com.wgw.photo.preview.interfaces.IFindThumbnailView;
 
 import androidx.annotation.NonNull;
@@ -71,6 +72,11 @@ class ShareData {
      */
     Drawable preLoadDrawable;
     
+    /**
+     * 预加载图片监听
+     */
+    DrawableLoadListener preDrawableLoadListener;
+    
     void applyConfig(Config config) {
         this.config.apply(config);
     }
@@ -86,5 +92,6 @@ class ShareData {
         isFirstCreate = true;
         openAnimDelayTime = 0;
         preLoadDrawable = null;
+        preDrawableLoadListener = null;
     }
 }

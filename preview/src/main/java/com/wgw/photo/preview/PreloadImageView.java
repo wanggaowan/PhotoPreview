@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.util.AttributeSet;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,7 +20,6 @@ import androidx.appcompat.widget.AppCompatImageView;
 @RestrictTo(Scope.LIBRARY)
 public class PreloadImageView extends AppCompatImageView {
     
-    private ImageView mActualView;
     private DrawableLoadListener mListener;
     
     public PreloadImageView(@NonNull Context context) {
@@ -43,10 +41,6 @@ public class PreloadImageView extends AppCompatImageView {
     
     @Override
     public void setImageDrawable(@Nullable Drawable drawable) {
-        if (mActualView != null) {
-            mActualView.setImageDrawable(drawable);
-        }
-        
         if (mListener != null) {
             mListener.onLoad(drawable);
         }
@@ -55,10 +49,6 @@ public class PreloadImageView extends AppCompatImageView {
     @Override
     public void setImageURI(@Nullable Uri uri) {
         super.setImageURI(uri);
-    }
-    
-    void setActualView(ImageView imageView) {
-        mActualView = imageView;
     }
     
     public void setDrawableLoadListener(DrawableLoadListener listener) {

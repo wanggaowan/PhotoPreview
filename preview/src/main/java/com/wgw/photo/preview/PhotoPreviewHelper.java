@@ -6,18 +6,14 @@ import android.animation.AnimatorSet;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -28,16 +24,13 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 
-import com.bumptech.glide.load.resource.gif.GifDrawable;
-import com.github.chrisbanes.photoview.custom.PhotoViewAttacher;
-import com.wgw.photo.preview.interfaces.OnLongClickListener;
+import com.wgw.photo.preview.ImagePagerAdapter.ViewHolder;
 import com.wgw.photo.preview.util.MatrixUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 import androidx.annotation.RestrictTo.Scope;
-import androidx.fragment.app.Fragment;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.lifecycle.Lifecycle.State;
 import androidx.transition.ChangeBounds;
@@ -49,12 +42,12 @@ import androidx.transition.TransitionManager;
 import androidx.transition.TransitionSet;
 
 /**
- * 图片预览Fragment
+ * 图片预览辅助类，主要处理预览打开和关闭时过渡动画
  *
  * @author Created by wanggaowan on 2019/2/27 0027 11:24
  */
 @RestrictTo(Scope.LIBRARY)
-public class PhotoPreviewFragment extends Fragment {
+class PhotoPreviewHelper {
     
     /*
      此预览库动画采用androidx.transition.Transition库实现，使用此库有以下几个点需要注意
@@ -103,24 +96,23 @@ public class PhotoPreviewFragment extends Fragment {
     private static final ArgbEvaluator ARGB_EVALUATOR = new ArgbEvaluator();
     private static final Interpolator INTERPOLATOR = new FastOutSlowInInterpolator();
     
-    FrameLayout mRoot;
-    private ProgressBar mLoading;
-    private PhotoView mPhotoView;
-    
+    final PreviewDialogFragment mFragment;
     // 占位图，辅助执行过度动画
     // 为什么不直接使用mPhotoView进行过度动画，主要有一下几个问题
     // 1. 使用mPhotoView，某些情况下预览打开后图片某一部分自动被放大。导致这个的原因可能是使用Glide加载库，设置了placeholder导致
     // 2. 预览动画开始时，需要对图片进行位移，裁减等操作，而预览大图加载时，不能调整其大小和缩放类型，否则预览大图显示将出现问题
-    private ImageView mHelperView;
-    private FrameLayout mHelperViewParent;
-    // 辅助加载，主要针对加载大图且指定缩放类型，加载期间不能更改
-    private PreloadImageView mHelperPreLoad;
+    private final ImageView mHelperView;
+    private final FrameLayout mHelperViewParent;
+    private final ProgressBar mLoading;
+    private final ShareData mShareData;
     
-    @Nullable
-    private ShareData mShareData;
+    // 当前界面显示预览图位置
+    private int mPosition;
+    // 上一次统计预览图对应缩列图数据时预览图所处位置
+    private int mOldPosition = -1;
+    
     private View mThumbnailView;
     private ScaleType mThumbnailViewScaleType;
-    private int mPosition;
     // 当前界面是否需要执行动画
     private boolean mNeedInAnim;
     // 根据动画时间可决定整个预览是否需要执行动画
@@ -133,69 +125,40 @@ public class PhotoPreviewFragment extends Fragment {
     private final int[] mSrcViewParentSize = new int[2];
     private final int[] mSrcImageLocation = new int[2];
     private final float[] mFloatTemp = new float[2];
-    // 记录预览界面图片缩放倍率为1时图片真实绘制大小
-    private final float[] mNoScaleImageActualSize = new float[2];
-    // 打开预览Transition动画是否已开始
-    private boolean mEnterAnimByTransitionStart = false;
-    // 加载预览图时，总共加载次数
-    private int mImageLoadCount;
-    // 辅助视图是否单独加载图片而不是依赖mPhotoView
-    private boolean mHelpViewSelfLoadImage;
-    // 是否已经初始化预览图大小
-    private boolean mInitThumbSize = false;
+    // 辅助图是否可接收新图片
+    private boolean mHelpViewCanSetImage = true;
     
-    @SuppressLint("InflateParams")
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        if (mRoot == null) {
-            mRoot = (FrameLayout) inflater.inflate(R.layout.fragment_preview, null);
-            mHelperView = mRoot.findViewById(R.id.iv_anim);
-            mHelperViewParent = mRoot.findViewById(R.id.fl_parent);
-            mHelperPreLoad = mRoot.findViewById(R.id.iv_pre_load);
-            mHelperPreLoad.setActualView(mHelperView);
-            mPhotoView = mRoot.findViewById(R.id.photoView);
-            mPhotoView.setPhotoPreviewFragment(this);
-            mLoading = mRoot.findViewById(R.id.loading);
-            initEvent();
-        } else {
-            mHelperViewParent.setVisibility(View.INVISIBLE);
-            mPhotoView.setVisibility(View.INVISIBLE);
-            mPhotoView.setScaleLevels(
-                PhotoViewAttacher.DEFAULT_MIN_SCALE,
-                PhotoViewAttacher.DEFAULT_MID_SCALE,
-                PhotoViewAttacher.DEFAULT_MAX_SCALE);
-            
-            mHelperViewParent.setTranslationX(0);
-            mHelperViewParent.setTranslationY(0);
-            setViewSize(mHelperViewParent, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-            setViewSize(mHelperView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-        }
+    public PhotoPreviewHelper(PreviewDialogFragment fragment, int position) {
+        mFragment = fragment;
+        mShareData = mFragment.mShareData;
+        mPosition = position;
         
-        if (savedInstanceState == null) {
-            // 防止预览时有些界面打开输入法，弹窗弹出时，输入法未及时关闭
-            mRoot.setFocusableInTouchMode(true);
-            mRoot.requestFocus();
-            initData();
-        }  // savedInstanceState != null的时候，预览窗口（父对象PreviewDialogFragment）将关闭，因此不做任何其它处理
+        mFragment.mRootView.setFocusableInTouchMode(true);
+        mFragment.mRootView.requestFocus();
+        mHelperView = mFragment.mRootView.findViewById(R.id.iv_anim);
+        mHelperViewParent = mFragment.mRootView.findViewById(R.id.fl_parent);
+        mLoading = mFragment.mLoading;
         
-        return mRoot;
-    }
-    
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        ViewParent parent = mRoot.getParent();
-        if (parent instanceof ViewGroup) {
-            ((ViewGroup) parent).removeView(mRoot);
+        mHelperViewParent.setVisibility(View.INVISIBLE);
+        mHelperViewParent.setTranslationX(0);
+        mHelperViewParent.setTranslationY(0);
+        mHelperView.setScaleX(1f);
+        mHelperView.setScaleY(1f);
+        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+            mHelperView.setOutlineProvider(null);
         }
+        setViewSize(mHelperViewParent, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        setViewSize(mHelperView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        
+        initEvent();
+        initData();
     }
     
     private void initEvent() {
-        mRoot.setOnKeyListener((v, keyCode, event) -> {
+        mFragment.mRootView.setOnKeyListener((v, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK
                 && (event == null || event.getAction() == KeyEvent.ACTION_UP)
-                && mPhotoView.getVisibility() == View.VISIBLE) {
+                && mFragment.mViewPager.getVisibility() == View.VISIBLE) {
                 exit();
                 return true;
             }
@@ -203,46 +166,29 @@ public class PhotoPreviewFragment extends Fragment {
             return false;
         });
         
-        mRoot.setOnClickListener(v -> {
-            if (mPhotoView.getVisibility() != View.VISIBLE) {
+        mFragment.mRootView.setOnClickListener(v -> {
+            if (mFragment.mViewPager.getVisibility() != View.VISIBLE) {
                 return;
             }
+            
             exit();
         });
-        
-        mPhotoView.setOnLongClickListener(v -> {
-            if (mShareData != null) {
-                OnLongClickListener listener = mShareData.config.onLongClickListener;
-                if (listener != null) {
-                    listener.onLongClick(mRoot);
-                }
-            }
-            return true;
-        });
-        
-        mPhotoView.setOnClickListener(v -> exit());
     }
     
     private void initData() {
-        mPhotoView.setImageDrawable(null);
-        Fragment parentFragment = getParentFragment();
-        if (!(parentFragment instanceof PreviewDialogFragment)) {
-            throw new RuntimeException("parent fragment is not PreviewDialogFragment");
+        mFragment.mRootView.setBackgroundColor(Color.TRANSPARENT);
+        mFragment.mViewPager.setVisibility(View.INVISIBLE);
+        mHelperViewParent.setVisibility(View.INVISIBLE);
+        mHelperView.setImageDrawable(null);
+        
+        if (mPosition != mOldPosition) {
+            mThumbnailView = getThumbnailView(mShareData);
+            mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
+            initThumbnailViewScaleType();
+            mOldPosition = mPosition;
         }
         
-        mShareData = ((PreviewDialogFragment) parentFragment).mShareData;
-        mRoot.setBackgroundColor(Color.TRANSPARENT);
-        mPhotoView.setStartView(mPosition == 0);
-        mPhotoView.setEndView(mShareData.config.sources == null
-            || mShareData.config.sources.size() == 0
-            || mShareData.config.sources.size() - 1 == mPosition);
-        
-        mThumbnailView = getThumbnailView(mShareData);
-        mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
-        mNeedInAnim = mAnimDuration > 0 && mShareData.showNeedAnim && mPosition == mShareData.config.defaultShowPosition;
-        initThumbnailViewScaleType();
-        
-        initLoading(mShareData);
+        mNeedInAnim = mAnimDuration > 0 && mShareData.showNeedAnim;
         loadData(mShareData);
     }
     
@@ -272,106 +218,83 @@ public class PhotoPreviewFragment extends Fragment {
     }
     
     private void loadData(ShareData shareData) {
-        loadImage(mPhotoView);
-        
         if (!mNeedInAnim) {
             initNoAnim();
             // 整个预览无需执行动画，因此第一个执行的预览界面执行一次预览打开回调
-            if (shareData.config.defaultShowPosition == mPosition) {
-                callOnOpen(null);
-                shareData.showNeedAnim = false;
-            }
+            callOnOpen(null);
+            shareData.showNeedAnim = false;
             return;
         }
         
         // 处理进入时的动画
         mNeedInAnim = false;
         shareData.showNeedAnim = false;
+        mHelpViewCanSetImage = true;
+        mShareData.preDrawableLoadListener = drawable -> {
+            if (mHelpViewCanSetImage) {
+                mHelperView.setImageDrawable(drawable);
+            }
+        };
+        mHelperView.setImageDrawable(mShareData.preLoadDrawable);
+        mShareData.preLoadDrawable = null;
         
         if (mThumbnailView == null) {
             enterAnimByScale();
             return;
         }
         
-        enterAnimByTransition(mThumbnailView, shareData);
+        enterAnimByTransition(mThumbnailView);
     }
     
+    /**
+     * 无动画进入
+     */
     private void initNoAnim() {
-        mRoot.setBackgroundColor(Color.BLACK);
+        mFragment.mRootView.setBackgroundColor(Color.BLACK);
+        mFragment.mViewPager.setVisibility(View.VISIBLE);
         mHelperViewParent.setVisibility(View.INVISIBLE);
-        mPhotoView.setVisibility(View.VISIBLE);
     }
     
+    /**
+     * 仅缩放动画
+     */
     private void enterAnimByScale() {
-        mPhotoView.setMinimumScale(0);
-        ObjectAnimator scaleOa = ObjectAnimator.ofFloat(mPhotoView, "scale", 0, 1f);
+        ObjectAnimator scaleOx = ObjectAnimator.ofFloat(mHelperView, "scaleX", 0, 1f);
+        ObjectAnimator scaleOy = ObjectAnimator.ofFloat(mHelperView, "scaleY", 0, 1f);
+        
         AnimatorSet set = new AnimatorSet();
         set.setDuration(mAnimDuration);
         set.setInterpolator(INTERPOLATOR);
         set.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
-                mPhotoView.setVisibility(View.VISIBLE);
-                mHelperViewParent.setVisibility(View.INVISIBLE);
+                mHelperViewParent.setVisibility(View.VISIBLE);
                 callOnOpen(true);
             }
             
             @Override
             public void onAnimationEnd(Animator animation) {
-                mPhotoView.setMinimumScale(PhotoViewAttacher.DEFAULT_MIN_SCALE);
+                mHelperViewParent.setVisibility(View.INVISIBLE);
+                mFragment.mViewPager.setVisibility(View.VISIBLE);
                 callOnOpen(false);
             }
         });
         
-        set.playTogether(scaleOa, getViewBgAnim(Color.BLACK, mAnimDuration, null));
+        set.playTogether(scaleOx, scaleOy, getViewBgAnim(Color.BLACK, mAnimDuration, null));
         set.start();
     }
     
     /**
      * 使用Transition库实现过度动画
      */
-    private void enterAnimByTransition(final View thumbnailView, final ShareData shareData) {
-        mHelperViewParent.setVisibility(View.INVISIBLE);
-        long delay = shareData.openAnimDelayTime;
-        
-        if (!shareData.config.waitDefaultPreviewImageLoaded) {
-            initEnterAnimByTransition(thumbnailView);
-            if (delay > 0) {
-                mHelperView.postDelayed(() -> {
-                    if (shareData.preLoadDrawable != null) {
-                        mHelperView.setImageDrawable(shareData.preLoadDrawable);
-                        shareData.preLoadDrawable = null;
-                    }
-                    doEnterAnimByTransition(shareData);
-                }, delay);
-            } else {
-                mHelperView.post(() -> {
-                    if (shareData.preLoadDrawable != null) {
-                        mHelperView.setImageDrawable(shareData.preLoadDrawable);
-                        shareData.preLoadDrawable = null;
-                    }
-                    doEnterAnimByTransition(shareData);
-                });
-            }
-            return;
-        }
-        
+    private void enterAnimByTransition(final View thumbnailView) {
+        long delay = mShareData.openAnimDelayTime;
         if (delay > 0) {
-            mHelperView.postDelayed(() -> checkPreviewImageLoad(0), delay);
+            mHelperView.postDelayed(this :: doEnterAnimByTransition, delay);
             initEnterAnimByTransition(thumbnailView);
         } else {
-            long enterAnimDelay = getEnterAnimDelay(shareData);
-            if (enterAnimDelay == 0) {
-                if (mInitThumbSize) {
-                    doEnterAnimByTransition(shareData);
-                } else {
-                    initEnterAnimByTransition(thumbnailView);
-                    mHelperView.post(() -> doEnterAnimByTransition(shareData));
-                }
-            } else {
-                mHelperView.postDelayed(() -> checkPreviewImageLoad(enterAnimDelay), enterAnimDelay);
-                initEnterAnimByTransition(thumbnailView);
-            }
+            initEnterAnimByTransition(thumbnailView);
+            mHelperView.post(this :: doEnterAnimByTransition);
         }
     }
     
@@ -379,7 +302,6 @@ public class PhotoPreviewFragment extends Fragment {
      * 初始化Transition所需内容
      */
     private void initEnterAnimByTransition(final View thumbnailView) {
-        mInitThumbSize = true;
         getSrcViewSize(thumbnailView);
         getSrcViewLocation(thumbnailView);
         
@@ -600,29 +522,9 @@ public class PhotoPreviewFragment extends Fragment {
     }
     
     /**
-     * 检查预览图片加载情况
+     * 执行预览打开过渡动画
      */
-    private void checkPreviewImageLoad(long totalDelay) {
-        if (mShareData == null) {
-            enterAnimByScale();
-            return;
-        }
-        
-        if (totalDelay > 200) {
-            doEnterAnimByTransition(mShareData);
-            return;
-        }
-        
-        long delay = getEnterAnimDelay(mShareData);
-        if (delay == 0) {
-            doEnterAnimByTransition(mShareData);
-            return;
-        }
-        
-        mHelperView.postDelayed(() -> checkPreviewImageLoad(delay + totalDelay), delay);
-    }
-    
-    private void doEnterAnimByTransition(ShareData shareData) {
+    private void doEnterAnimByTransition() {
         TransitionSet transitionSet = new TransitionSet()
             .setDuration(mAnimDuration)
             .addTransition(new ChangeBounds())
@@ -631,6 +533,7 @@ public class PhotoPreviewFragment extends Fragment {
             .addListener(new TransitionListenerAdapter() {
                 @Override
                 public void onTransitionStart(@NonNull Transition transition) {
+                    mHelpViewCanSetImage = false;
                     mHelperViewParent.setVisibility(View.VISIBLE);
                     doViewBgAnim(Color.BLACK, mAnimDuration, null);
                     callOnOpen(true);
@@ -638,33 +541,36 @@ public class PhotoPreviewFragment extends Fragment {
                 
                 @Override
                 public void onTransitionEnd(@NonNull Transition transition) {
-                    mEnterAnimByTransitionStart = false;
-                    mPhotoView.setVisibility(View.VISIBLE);
+                    mHelpViewCanSetImage = true;
+                    if (mLoading.getVisibility() == View.VISIBLE) {
+                        mLoading.setVisibility(View.GONE);
+                    }
                     mHelperViewParent.setVisibility(View.INVISIBLE);
-                    setHelperViewImage();
+                    mFragment.mViewPager.setVisibility(View.VISIBLE);
                     callOnOpen(false);
                 }
             });
         
-        
-        if (shareData.config.shapeTransformType != null) {
-            if (shareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
+        if (mShareData.config.shapeTransformType != null) {
+            if (mShareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
                 transitionSet.addTransition(
                     new ChangeShape(Math.min(mSrcViewSize[0], mSrcViewSize[1]) / 2f, 0)
                         .addTarget(mHelperView));
             } else {
                 transitionSet.addTransition(
-                    new ChangeShape(shareData.config.shapeCornerRadius, 0)
+                    new ChangeShape(mShareData.config.shapeCornerRadius, 0)
                         .addTarget(mHelperView));
             }
         }
         
-        if (getEnterAnimDelay(shareData) == 0) {
+        if (mHelperView.getDrawable() != null) {
+            mHelpViewCanSetImage = false;
             // ChangeImageTransform执行MATRIX变换，因此一定需要最终加载完成图片
             transitionSet.addTransition(new ChangeImageTransform().addTarget(mHelperView));
+        } else {
+            mLoading.setVisibility(View.VISIBLE);
         }
         
-        mEnterAnimByTransitionStart = true;
         TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
         
         mHelperViewParent.setTranslationX(0);
@@ -678,150 +584,13 @@ public class PhotoPreviewFragment extends Fragment {
     }
     
     /**
-     * 使用Transition库实现动画时，检测是否需要延迟，主要是缩放类型为ScaleType.CENTER_CROP时，等待最终图像的获取
-     */
-    private long getEnterAnimDelay(ShareData shareData) {
-        Drawable drawable = mHelperView.getDrawable();
-        if (drawable == null) {
-            return 50;
-        }
-        
-        if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
-            return 50;
-        }
-        
-        if (shareData.preLoadDrawable != null) {
-            mHelperView.setImageDrawable(shareData.preLoadDrawable);
-            shareData.preLoadDrawable = null;
-            return 0;
-        }
-        
-        if (mImageLoadCount > 1) {
-            Drawable drawable2 = ((ImageView) mThumbnailView).getDrawable();
-            if (drawable2 != null && drawable2.getIntrinsicWidth() >= drawable.getIntrinsicWidth()
-                && drawable2.getIntrinsicHeight() >= drawable.getIntrinsicHeight()) {
-                return 50;
-            }
-        }
-        
-        return 0;
-    }
-    
-    /**
-     * 加载图片
-     */
-    private void loadImage(ImageView imageView) {
-        if (mShareData != null && mShareData.config.imageLoader != null) {
-            if (mShareData.config.sources != null && mPosition < mShareData.config.sources.size() && mPosition >= 0) {
-                mShareData.config.imageLoader.onLoadImage(mPosition, mShareData.config.sources.get(mPosition), imageView);
-            } else {
-                mShareData.config.imageLoader.onLoadImage(mPosition, null, imageView);
-            }
-        }
-    }
-    
-    /**
      * 设置View的大小
      */
     private void setViewSize(View target, int width, int height) {
-        ViewGroup.LayoutParams params = target.getLayoutParams();
+        LayoutParams params = target.getLayoutParams();
         params.width = width;
         params.height = height;
         target.setLayoutParams(params);
-    }
-    
-    /**
-     * 初始化loading
-     */
-    private void initLoading(ShareData shareData) {
-        mPhotoView.setOnMatrixChangeListener(this :: getPreviewDrawableSize);
-        
-        mPhotoView.setImageChangeListener(drawable -> {
-            if (drawable != null) {
-                mImageLoadCount++;
-                mLoading.setVisibility(View.GONE);
-                if (mAnimDuration <= 0) {
-                    return;
-                }
-                
-                // 当前界面未执行进入时动画，因此未初始化mIvAnim状态，此处初始化，用于退出时使用
-                setHelperViewImage();
-            }
-        });
-        
-        if (shareData.config.delayShowProgressTime < 0) {
-            mLoading.setVisibility(View.GONE);
-            return;
-        }
-        
-        if (shareData.config.progressDrawable != null) {
-            mLoading.setIndeterminateDrawable(shareData.config.progressDrawable);
-        }
-        
-        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && shareData.config.progressColor != null) {
-            mLoading.setIndeterminateTintList(ColorStateList.valueOf(shareData.config.progressColor));
-        }
-        
-        mLoading.setVisibility(shareData.config.delayShowProgressTime == 0 ? View.VISIBLE : View.GONE);
-        if (shareData.config.defaultShowPosition > 0) {
-            // 监听指定延迟后图片是否加载成功
-            mPhotoView.postDelayed(() -> {
-                if (mPhotoView.getDrawable() == null) {
-                    mLoading.setVisibility(View.VISIBLE);
-                }
-            }, shareData.config.delayShowProgressTime);
-        }
-    }
-    
-    /**
-     * 设置辅助动画View的Image
-     */
-    private void setHelperViewImage() {
-        if (mEnterAnimByTransitionStart || mHelpViewSelfLoadImage) {
-            return;
-        }
-        
-        Drawable drawable = mPhotoView.getDrawable();
-        if (drawable instanceof GifDrawable
-            // 不切圆形时，ScaleType.MATRIX需要单独加载图片，因为无法使用其它缩放类型达到ScaleType.MATRIX绘制效果
-            || (mThumbnailViewScaleType == ScaleType.MATRIX
-            && (mShareData == null || mShareData.config.shapeTransformType == null
-            || mShareData.config.shapeTransformType != ShapeTransformType.CIRCLE))) {
-            mHelpViewSelfLoadImage = true;
-            if (mThumbnailViewScaleType == ScaleType.MATRIX) {
-                mHelperPreLoad.setScaleType(ScaleType.MATRIX);
-            } else {
-                mHelperPreLoad.setScaleType(ScaleType.FIT_CENTER);
-            }
-            loadImage(mHelperPreLoad);
-        } else {
-            mHelperPreLoad.setImageDrawable(drawable);
-        }
-    }
-    
-    /**
-     * 获取预览图片真实大小，由于图片刚进入时，需要等待绘制，所以可能不能及时获取到准确的大小
-     */
-    private void getPreviewDrawableSize(RectF rectF) {
-        if (mPhotoView.getScale() != 1) {
-            return;
-        }
-        
-        // 用于退出时计算移动后最终图像坐标使用
-        // 刚设置图片就获取，此时可能获取不成功
-        mNoScaleImageActualSize[0] = rectF.width();
-        mNoScaleImageActualSize[1] = rectF.height();
-        if (mNoScaleImageActualSize[0] > 0) {
-            // 计算最大缩放倍率，屏幕大小的三倍
-            double ceil = Math.ceil(mRoot.getWidth() / mNoScaleImageActualSize[0]);
-            float maxScale = (float) (ceil * 3f);
-            if (maxScale < mPhotoView.getMaximumScale()) {
-                return;
-            }
-            
-            float midScale = (maxScale + mPhotoView.getMinimumScale()) / 2;
-            mPhotoView.setScaleLevels(mPhotoView.getMinimumScale(), midScale, maxScale);
-        }
     }
     
     /**
@@ -830,7 +599,7 @@ public class PhotoPreviewFragment extends Fragment {
      * @return {@code false}:未执行退出逻辑，可能当前界面已关闭或还未创建完成
      */
     public boolean exit() {
-        if (!getLifecycle().getCurrentState().isAtLeast(State.STARTED)) {
+        if (!mFragment.getLifecycle().getCurrentState().isAtLeast(State.STARTED)) {
             return false;
         }
         
@@ -839,7 +608,23 @@ public class PhotoPreviewFragment extends Fragment {
             return true;
         }
         
-        if (mPhotoView.getDrawable() == null) {
+        View view = mFragment.mViewPager.findViewWithTag(mFragment.mViewPager.getCurrentItem());
+        if (view == null) {
+            callOnExit(null);
+            return true;
+        }
+        
+        Object tag = view.getTag(R.id.view_holder);
+        if (!(tag instanceof ViewHolder)) {
+            callOnExit(null);
+            return true;
+        }
+        
+        ViewHolder viewHolder = (ViewHolder) tag;
+        PhotoView photoView = viewHolder.getPhotoView();
+        viewHolder.getLoading().setVisibility(View.GONE);
+        
+        if (photoView.getDrawable() == null) {
             callOnExit(true);
             doViewBgAnim(Color.TRANSPARENT, mAnimDuration, new AnimatorListenerAdapter() {
                 @Override
@@ -850,15 +635,30 @@ public class PhotoPreviewFragment extends Fragment {
             return true;
         }
         
-        mPhotoView.setMinimumScale(0);
+        if (mPosition != mOldPosition) {
+            mThumbnailView = getThumbnailView(mShareData);
+            mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
+            initThumbnailViewScaleType();
+            mOldPosition = mPosition;
+        }
+        
+        resetHelpViewSize(viewHolder);
+        
         if (mThumbnailView == null) {
-            ObjectAnimator scaleOa = ObjectAnimator.ofFloat(mPhotoView, "scale", mPhotoView.getScale(), 0f);
+            ObjectAnimator scaleOx = ObjectAnimator.ofFloat(mHelperView, "scaleX", 1f, 0f);
+            ObjectAnimator scaleOy = ObjectAnimator.ofFloat(mHelperView, "scaleY", 1f, 0f);
             AnimatorSet set = new AnimatorSet();
             set.setDuration(mAnimDuration);
             set.setInterpolator(INTERPOLATOR);
-            set.playTogether(scaleOa, getViewBgAnim(Color.TRANSPARENT, mAnimDuration, null));
+            set.playTogether(scaleOx, scaleOy, getViewBgAnim(Color.TRANSPARENT, mAnimDuration, null));
             
             set.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    mFragment.mViewPager.setVisibility(View.GONE);
+                    mHelperViewParent.setVisibility(View.VISIBLE);
+                }
+                
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     callOnExit(false);
@@ -870,46 +670,50 @@ public class PhotoPreviewFragment extends Fragment {
             return true;
         }
         
-        exitAnimByTransition(mThumbnailView);
+        exitAnimByTransition(mThumbnailView, photoView);
         return true;
     }
     
     /**
-     * 使用Transition库实现过度动画
+     * 重置辅助View的大小
      */
-    private void exitAnimByTransition(final View thumbnailView) {
-        if (mThumbnailViewScaleType == ScaleType.MATRIX || mPhotoView.getScale() != 1) {
+    private void resetHelpViewSize(ViewHolder viewHolder) {
+        PhotoView photoView = viewHolder.getPhotoView();
+        float[] noScaleImageActualSize = viewHolder.getNoScaleImageActualSize();
+        FrameLayout rootView = mFragment.mRootView;
+        
+        if (mThumbnailViewScaleType == ScaleType.MATRIX || photoView.getScale() != 1) {
             // thumbnailView是ScaleType.MATRIX需要设置ImageView与drawable大小一致,且如果是下拉后缩小后关闭预览，则肯能无法与缩略图无缝衔接
             // 得到关闭时预览图片真实绘制大小
             float[] imageActualSize = mFloatTemp;
-            getImageActualSize(mPhotoView, imageActualSize);
-            if (mNoScaleImageActualSize[0] == 0 && mNoScaleImageActualSize[1] == 0) {
+            getImageActualSize(photoView, imageActualSize);
+            if (noScaleImageActualSize[0] == 0 && noScaleImageActualSize[1] == 0) {
                 // 此时只是降低偏移值，但是这是不准确的
-                getImageActualSize(mHelperView, mNoScaleImageActualSize);
+                getImageActualSize(mHelperView, noScaleImageActualSize);
             }
             
-            if (mPhotoView.getScale() < 1 || (mThumbnailViewScaleType == ScaleType.MATRIX && mPhotoView.getScale() == 1)) {
+            if (photoView.getScale() < 1 || (mThumbnailViewScaleType == ScaleType.MATRIX && photoView.getScale() == 1)) {
                 // 计算关闭时预览图片真实X,Y坐标
                 // mPhotoView向下移动后缩放比例误差值，该值是手动调出来的，不清楚为什么超出了这么多
                 // 只有mPhotoView.getScale() < 1时才会出现此误差
-                float errorRatio = mPhotoView.getScale() < 1 ? 0.066f : 0;
+                float errorRatio = photoView.getScale() < 1 ? 0.066f : 0;
                 // 此处取mRoot.getHeight()而不是mIvAnim.getHeight()是因为如果当前界面非默认预览的界面,
                 // 那么mIvAnim.getHeight()获取的并不是可显示区域高度，只是图片实际绘制的高度，因此使用mRoot.getHeight()
-                float y = mRoot.getHeight() / 2f - mNoScaleImageActualSize[1] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角Y轴值
-                    - mPhotoView.getScrollY() // 向下移动的距离，向上移动不会触发关闭
-                    + imageActualSize[1] * (1 - mPhotoView.getScale() - errorRatio); // 由于在向下移动时，伴随图片缩小，因此需要加上缩小高度
-                float x = mRoot.getWidth() / 2f - mNoScaleImageActualSize[0] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角Z轴值
-                    - mPhotoView.getScrollX() // 向左或向右移动的距离
-                    + imageActualSize[0] * (1 - mPhotoView.getScale() - errorRatio); // 由于在向下移动时，伴随图片缩小，因此需要加上缩小宽度
+                float y = rootView.getHeight() / 2f - noScaleImageActualSize[1] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角Y轴值
+                    - photoView.getScrollY() // 向下移动的距离，向上移动不会触发关闭
+                    + imageActualSize[1] * (1 - photoView.getScale() - errorRatio); // 由于在向下移动时，伴随图片缩小，因此需要加上缩小高度
+                float x = rootView.getWidth() / 2f - noScaleImageActualSize[0] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角Z轴值
+                    - photoView.getScrollX() // 向左或向右移动的距离
+                    + imageActualSize[0] * (1 - photoView.getScale() - errorRatio); // 由于在向下移动时，伴随图片缩小，因此需要加上缩小宽度
                 
                 mHelperViewParent.setTranslationX(x);
                 mHelperViewParent.setTranslationY(y);
-            } else if (mPhotoView.getScale() > 1) {
-                Matrix imageMatrix = mPhotoView.getImageMatrix();
+            } else if (photoView.getScale() > 1) {
+                Matrix imageMatrix = photoView.getImageMatrix();
                 float scrollX = MatrixUtils.getValue(imageMatrix, Matrix.MTRANS_X);
                 float scrollY = MatrixUtils.getValue(imageMatrix, Matrix.MTRANS_Y);
-                float y = imageActualSize[1] > mRoot.getHeight() ? scrollY : mRoot.getHeight() / 2f - imageActualSize[1] / 2f;
-                float x = imageActualSize[0] > mRoot.getWidth() ? scrollX : mRoot.getWidth() / 2f - imageActualSize[0] / 2f;
+                float y = imageActualSize[1] > rootView.getHeight() ? scrollY : rootView.getHeight() / 2f - imageActualSize[1] / 2f;
+                float x = imageActualSize[0] > rootView.getWidth() ? scrollX : rootView.getWidth() / 2f - imageActualSize[0] / 2f;
                 
                 mHelperViewParent.setTranslationX(x);
                 mHelperViewParent.setTranslationY(y);
@@ -917,8 +721,15 @@ public class PhotoPreviewFragment extends Fragment {
             setViewSize(mHelperViewParent, ((int) imageActualSize[0]), ((int) imageActualSize[1]));
             setViewSize(mHelperView, ((int) imageActualSize[0]), ((int) imageActualSize[1]));
         }
-        
+    }
+    
+    /**
+     * 使用Transition库实现过度动画
+     */
+    private void exitAnimByTransition(final View thumbnailView, PhotoView photoView) {
         mHelperView.setScaleType(ScaleType.FIT_CENTER);
+        mHelperView.setImageDrawable(photoView.getDrawable());
+        
         getSrcViewSize(thumbnailView);
         getSrcViewLocation(thumbnailView);
         callOnExit(true);
@@ -938,7 +749,7 @@ public class PhotoPreviewFragment extends Fragment {
                     
                     @Override
                     public void onTransitionStart(@NonNull Transition transition) {
-                        mPhotoView.setVisibility(View.INVISIBLE);
+                        mFragment.mViewPager.setVisibility(View.INVISIBLE);
                         mHelperViewParent.setVisibility(View.VISIBLE);
                         doViewBgAnim(Color.TRANSPARENT, mAnimDuration, null);
                     }
@@ -966,15 +777,21 @@ public class PhotoPreviewFragment extends Fragment {
         });
     }
     
+    /**
+     * 执行背景过渡动画
+     */
     void doViewBgAnim(final int endColor, long duration, AnimatorListenerAdapter listenerAdapter) {
         getViewBgAnim(endColor, duration, listenerAdapter).start();
     }
     
+    /**
+     * 返回背景过渡动画
+     */
     Animator getViewBgAnim(final int endColor, long duration, AnimatorListenerAdapter listenerAdapter) {
-        final int start = ((ColorDrawable) mRoot.getBackground()).getColor();
+        final int start = ((ColorDrawable) mFragment.mRootView.getBackground()).getColor();
         ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
         animator.addUpdateListener(animation ->
-            mRoot.setBackgroundColor((int) ARGB_EVALUATOR.evaluate(animation.getAnimatedFraction(), start, endColor)));
+            mFragment.mRootView.setBackgroundColor((int) ARGB_EVALUATOR.evaluate(animation.getAnimatedFraction(), start, endColor)));
         animator.setDuration(duration);
         animator.setInterpolator(INTERPOLATOR);
         if (listenerAdapter != null) {
@@ -1036,6 +853,7 @@ public class PhotoPreviewFragment extends Fragment {
                 return getThumbnailViewNotDefault(shareData, shareData.config.defaultShowPosition);
             }
         }
+        
         return view;
     }
     
@@ -1044,10 +862,6 @@ public class PhotoPreviewFragment extends Fragment {
      */
     @Nullable
     private View getThumbnailViewNotDefault(ShareData shareData, int position) {
-        if (mThumbnailView != null) {
-            return mThumbnailView;
-        }
-        
         if (shareData.thumbnailView != null) {
             return shareData.thumbnailView;
         } else if (shareData.findThumbnailView != null) {
@@ -1117,7 +931,7 @@ public class PhotoPreviewFragment extends Fragment {
         view.getLocationOnScreen(mSrcImageLocation);
         // 预览界面采用沉浸式全屏显示模式，如果手机系统支持，横竖屏都绘制到耳朵区域
         // 以下逻辑防止部分手机横屏时，耳朵区域不显示内容，此时设置的预览坐标不能采用OnScreen坐标
-        mRoot.getLocationOnScreen(mIntTemp);
+        mFragment.mRootView.getLocationOnScreen(mIntTemp);
         mSrcImageLocation[0] -= mIntTemp[0];
         mSrcImageLocation[1] -= mIntTemp[1];
     }
@@ -1167,6 +981,9 @@ public class PhotoPreviewFragment extends Fragment {
         mPosition = position;
     }
     
+    /**
+     * 预览退出监听
+     */
     public interface OnExitListener {
         /**
          * 退出动作开始执行
@@ -1179,6 +996,9 @@ public class PhotoPreviewFragment extends Fragment {
         void onExit();
     }
     
+    /**
+     * 预览打开监听
+     */
     public interface OnOpenListener {
         /**
          * 进入动画开始执行

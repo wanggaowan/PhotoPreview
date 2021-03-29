@@ -408,7 +408,13 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             if (mGestureDetector != null && mGestureDetector.onTouchEvent(ev)) {
                 handled = true;
             }
-            
+        } else if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            handled = mOnClickListener != null;
+        } else if (ev.getAction() == MotionEvent.ACTION_UP) {
+            if (mOnClickListener != null) {
+                mOnClickListener.onClick(v);
+                handled = true;
+            }
         }
         return handled;
     }

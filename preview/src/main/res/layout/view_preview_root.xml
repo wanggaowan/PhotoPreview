@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rl_root_photo_preview"
     android:layout_width="match_parent"
@@ -10,7 +11,35 @@
         android:id="@+id/viewpager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:overScrollMode="never" />
+        android:overScrollMode="never"
+        android:visibility="invisible" />
+
+    <!--为什么要包裹一层，主要就是防止用户指定的缩略图(srcView)指定固定宽高，比如100dp,100dp
+    加入srcView父类宽高是50dp,100dp,那么srcView实际显示大小也只有50dp,100dp.为了处理此情况，
+    在iv_anim包裹一层，用于实现类似于srcView显示不全的情况
+    -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/fl_parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/transparent"
+            android:visibility="invisible"
+            app:cardBackgroundColor="@color/transparent"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/iv_anim"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:ignore="ContentDescription" />
+
+        </androidx.cardview.widget.CardView>
+
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/ll_dot_indicator_photo_preview"

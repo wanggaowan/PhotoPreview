@@ -93,7 +93,6 @@ PhotoPreview
     .animDuration(400) // 动画时间，null：使用默认时间，<=0: 不执行动画
     .shapeTransformType(ShapeTransformType.CIRCLE) // 图形变换类型，针对缩略图是圆形或圆角矩形
     .shapeCornerRadius(50) // 仅当图形变换类型设置为ShapeTransformType.ROUND_RECT时，指定圆角矩形圆角半径
-    .waitDefaultPreviewImageLoaded(false) // 是否等待defaultShowPosition预览图加载完成才执行预览动画，默认为false
     .build()
     .show(thumbnailView); // 展示预览，有show()、show(View)、show(IFindThumbnailView)三个重载
 ```

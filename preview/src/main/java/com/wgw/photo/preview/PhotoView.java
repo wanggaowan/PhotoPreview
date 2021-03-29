@@ -34,7 +34,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     private boolean mStartView = false;
     // 是否是预览的最后一个View
     private boolean mEndView = false;
-    private PhotoPreviewFragment mPhotoPreviewFragment;
+    private PhotoPreviewHelper mHelper;
     private ImageChangeListener mImageChangeListener;
     private final ViewConfiguration mViewConfiguration;
     
@@ -98,7 +98,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
         
         // 这里恢复位置和透明度
         if (mIntAlpha != 255 && getScale() < 0.8) {
-            mPhotoPreviewFragment.exit();
+            mHelper.exit();
         } else {
             reset();
         }
@@ -107,7 +107,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     private void reset() {
         mIntAlpha = 255;
         mBgAnimStart = true;
-        mPhotoPreviewFragment.doViewBgAnim(Color.BLACK, RESET_ANIM_TIME, new AnimatorListenerAdapter() {
+        mHelper.doViewBgAnim(Color.BLACK, RESET_ANIM_TIME, new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 mBgAnimStart = false;
@@ -188,7 +188,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
             mIntAlpha = 255;
         }
         
-        mPhotoPreviewFragment.mRoot.getBackground().setAlpha(mIntAlpha);
+        mHelper.mFragment.mRootView.getBackground().setAlpha(mIntAlpha);
         if (scrollY < 0 && scale >= 0.6) {
             // 更改大小
             setScale(scale);
@@ -307,8 +307,8 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
         }
     }
     
-    void setPhotoPreviewFragment(PhotoPreviewFragment photoPreviewFragment) {
-        mPhotoPreviewFragment = photoPreviewFragment;
+    void setPhotoPreviewHelper(PhotoPreviewHelper helper) {
+        mHelper = helper;
     }
     
     void setImageChangeListener(ImageChangeListener listener) {

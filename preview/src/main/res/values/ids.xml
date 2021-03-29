@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="view_holder" type="id" />
+    <item name="loading" type="id" />
+    <item name="view_pager_id" type="id" />
+    <item name="view_pager_id_next" type="id" />
+</resources>
