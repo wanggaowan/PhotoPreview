@@ -12,7 +12,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -535,6 +534,9 @@ class PhotoPreviewHelper {
                 public void onTransitionStart(@NonNull Transition transition) {
                     mHelpViewCanSetImage = false;
                     mHelperViewParent.setVisibility(View.VISIBLE);
+                    if (mHelperView.getDrawable() != null) {
+                        mLoading.setVisibility(View.GONE);
+                    }
                     doViewBgAnim(Color.BLACK, mAnimDuration, null);
                     callOnOpen(true);
                 }
