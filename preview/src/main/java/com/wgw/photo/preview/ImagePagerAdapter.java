@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
+import com.wgw.photo.preview.PhotoPreviewHelper.OnOpenListener;
+
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -52,7 +54,7 @@ class ImagePagerAdapter extends PagerAdapter {
     @Override
     public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
         ViewHolder holder = (ViewHolder) object;
-        holder.root.setTag(null);
+        holder.destroy();
         container.removeView(holder.root);
     }
     
@@ -74,6 +76,8 @@ class ImagePagerAdapter extends PagerAdapter {
         private final ShareData shareData;
         // 记录预览界面图片缩放倍率为1时图片真实绘制大小
         private final float[] mNoScaleImageActualSize = new float[2];
+        private PhotoPreviewHelper.OnOpenListener openListener;
+        private PhotoPreviewHelper.OnExitListener exitListener;
         
         @SuppressLint("InflateParams")
         public ViewHolder(PhotoPreviewHelper helper, ShareData shareData, ViewGroup container, int position) {
@@ -87,6 +91,7 @@ class ImagePagerAdapter extends PagerAdapter {
             
             photoView = root.findViewById(R.id.photoView);
             loading = root.findViewById(R.id.loading);
+            setPhotoViewVisibility();
             
             photoView.setPhotoPreviewHelper(helper);
             photoView.setStartView(position == 0);
@@ -97,6 +102,49 @@ class ImagePagerAdapter extends PagerAdapter {
             initEvent();
             initLoading();
             loadImage(photoView, position);
+        }
+        
+        /**
+         * 根据预览动画设置大图显示与隐藏
+         */
+        private void setPhotoViewVisibility() {
+            if (helper.isOpenAnimEnd()) {
+                photoView.setVisibility(View.VISIBLE);
+            }
+            
+            openListener = new OnOpenListener() {
+                @Override
+                public void onStart() {
+                    photoView.setVisibility(View.INVISIBLE);
+                }
+                
+                @Override
+                public void onEnd() {
+                    photoView.setVisibility(View.VISIBLE);
+                }
+            };
+            
+            helper.addOnOpenListener(openListener);
+            
+            exitListener = new PhotoPreviewHelper.OnExitListener() {
+                @Override
+                public void onStart() {
+                    photoView.setVisibility(View.INVISIBLE);
+                }
+                
+                @Override
+                public void onExit() {
+                
+                }
+            };
+            
+            helper.addOnExitListener(exitListener);
+        }
+        
+        private void destroy() {
+            root.setTag(null);
+            helper.removeOnOpenListener(openListener);
+            helper.removeOnExitListener(exitListener);
         }
         
         private void initEvent() {
@@ -139,6 +187,7 @@ class ImagePagerAdapter extends PagerAdapter {
                 loading.setIndeterminateTintList(ColorStateList.valueOf(shareData.config.progressColor));
             }
             
+            // loading.setVisibility(!helper.isAnimStart() && shareData.config.delayShowProgressTime == 0 ? View.VISIBLE : View.GONE);
             loading.setVisibility(shareData.config.delayShowProgressTime == 0 ? View.VISIBLE : View.GONE);
             if (shareData.config.delayShowProgressTime > 0) {
                 // 监听指定延迟后图片是否加载成功

@@ -21,10 +21,12 @@ import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-import android.widget.ProgressBar;
 
 import com.wgw.photo.preview.ImagePagerAdapter.ViewHolder;
 import com.wgw.photo.preview.util.MatrixUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -102,7 +104,6 @@ class PhotoPreviewHelper {
     // 2. 预览动画开始时，需要对图片进行位移，裁减等操作，而预览大图加载时，不能调整其大小和缩放类型，否则预览大图显示将出现问题
     private final ImageView mHelperView;
     private final FrameLayout mHelperViewParent;
-    private final ProgressBar mLoading;
     private final ShareData mShareData;
     
     // 当前界面显示预览图位置
@@ -127,6 +128,11 @@ class PhotoPreviewHelper {
     // 辅助图是否可接收新图片
     private boolean mHelpViewCanSetImage = true;
     
+    // 预览打开动画执行结束
+    private boolean mOpenAnimEnd = false;
+    private List<OnOpenListener> mOpenListenerList;
+    private List<OnExitListener> mExitListenerList;
+    
     public PhotoPreviewHelper(PreviewDialogFragment fragment, int position) {
         mFragment = fragment;
         mShareData = mFragment.mShareData;
@@ -136,7 +142,6 @@ class PhotoPreviewHelper {
         mFragment.mRootView.requestFocus();
         mHelperView = mFragment.mRootView.findViewById(R.id.iv_anim);
         mHelperViewParent = mFragment.mRootView.findViewById(R.id.fl_parent);
-        mLoading = mFragment.mLoading;
         
         mHelperViewParent.setVisibility(View.INVISIBLE);
         mHelperViewParent.setTranslationX(0);
@@ -157,7 +162,7 @@ class PhotoPreviewHelper {
         mFragment.mRootView.setOnKeyListener((v, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK
                 && (event == null || event.getAction() == KeyEvent.ACTION_UP)
-                && mFragment.mViewPager.getVisibility() == View.VISIBLE) {
+                && mOpenAnimEnd) {
                 exit();
                 return true;
             }
@@ -166,7 +171,7 @@ class PhotoPreviewHelper {
         });
         
         mFragment.mRootView.setOnClickListener(v -> {
-            if (mFragment.mViewPager.getVisibility() != View.VISIBLE) {
+            if (!mOpenAnimEnd) {
                 return;
             }
             
@@ -176,7 +181,6 @@ class PhotoPreviewHelper {
     
     private void initData() {
         mFragment.mRootView.setBackgroundColor(Color.TRANSPARENT);
-        mFragment.mViewPager.setVisibility(View.INVISIBLE);
         mHelperViewParent.setVisibility(View.INVISIBLE);
         mHelperView.setImageDrawable(null);
         
@@ -250,7 +254,6 @@ class PhotoPreviewHelper {
      */
     private void initNoAnim() {
         mFragment.mRootView.setBackgroundColor(Color.BLACK);
-        mFragment.mViewPager.setVisibility(View.VISIBLE);
         mHelperViewParent.setVisibility(View.INVISIBLE);
     }
     
@@ -274,7 +277,6 @@ class PhotoPreviewHelper {
             @Override
             public void onAnimationEnd(Animator animation) {
                 mHelperViewParent.setVisibility(View.INVISIBLE);
-                mFragment.mViewPager.setVisibility(View.VISIBLE);
                 callOnOpen(false);
             }
         });
@@ -534,9 +536,6 @@ class PhotoPreviewHelper {
                 public void onTransitionStart(@NonNull Transition transition) {
                     mHelpViewCanSetImage = false;
                     mHelperViewParent.setVisibility(View.VISIBLE);
-                    if (mHelperView.getDrawable() != null) {
-                        mLoading.setVisibility(View.GONE);
-                    }
                     doViewBgAnim(Color.BLACK, mAnimDuration, null);
                     callOnOpen(true);
                 }
@@ -544,11 +543,7 @@ class PhotoPreviewHelper {
                 @Override
                 public void onTransitionEnd(@NonNull Transition transition) {
                     mHelpViewCanSetImage = true;
-                    if (mLoading.getVisibility() == View.VISIBLE) {
-                        mLoading.setVisibility(View.GONE);
-                    }
                     mHelperViewParent.setVisibility(View.INVISIBLE);
-                    mFragment.mViewPager.setVisibility(View.VISIBLE);
                     callOnOpen(false);
                 }
             });
@@ -569,8 +564,6 @@ class PhotoPreviewHelper {
             mHelpViewCanSetImage = false;
             // ChangeImageTransform执行MATRIX变换，因此一定需要最终加载完成图片
             transitionSet.addTransition(new ChangeImageTransform().addTarget(mHelperView));
-        } else {
-            mLoading.setVisibility(View.VISIBLE);
         }
         
         TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
@@ -657,8 +650,8 @@ class PhotoPreviewHelper {
             set.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animation) {
-                    mFragment.mViewPager.setVisibility(View.GONE);
                     mHelperViewParent.setVisibility(View.VISIBLE);
+                    callOnExit(true);
                 }
                 
                 @Override
@@ -667,7 +660,6 @@ class PhotoPreviewHelper {
                 }
             });
             
-            callOnExit(true);
             set.start();
             return true;
         }
@@ -734,7 +726,6 @@ class PhotoPreviewHelper {
         
         getSrcViewSize(thumbnailView);
         getSrcViewLocation(thumbnailView);
-        callOnExit(true);
         
         mHelperView.post(() -> {
             TransitionSet transitionSet = new TransitionSet()
@@ -751,9 +742,9 @@ class PhotoPreviewHelper {
                     
                     @Override
                     public void onTransitionStart(@NonNull Transition transition) {
-                        mFragment.mViewPager.setVisibility(View.INVISIBLE);
                         mHelperViewParent.setVisibility(View.VISIBLE);
                         doViewBgAnim(Color.TRANSPARENT, mAnimDuration, null);
+                        callOnExit(true);
                     }
                 });
             
@@ -942,17 +933,29 @@ class PhotoPreviewHelper {
      * 预览界面打开时执行回调
      */
     private void callOnOpen(Boolean start) {
-        if (mShareData != null) {
-            OnOpenListener onOpenListener = mShareData.onOpenListener;
-            if (onOpenListener != null) {
-                if (start == null) {
-                    onOpenListener.onStart();
-                    onOpenListener.onEnd();
-                } else if (start) {
-                    onOpenListener.onStart();
-                } else {
-                    onOpenListener.onEnd();
-                }
+        List<OnOpenListener> list = new ArrayList<>();
+        if (mShareData != null && mShareData.onOpenListener != null) {
+            list.add(mShareData.onOpenListener);
+        }
+        
+        if (mOpenListenerList != null) {
+            list.addAll(mOpenListenerList);
+        }
+        
+        if (start == null) {
+            mOpenAnimEnd = true;
+            for (OnOpenListener onOpenListener : list) {
+                onOpenListener.onStart();
+                onOpenListener.onEnd();
+            }
+        } else if (start) {
+            for (OnOpenListener onOpenListener : list) {
+                onOpenListener.onStart();
+            }
+        } else {
+            mOpenAnimEnd = true;
+            for (OnOpenListener onOpenListener : list) {
+                onOpenListener.onEnd();
             }
         }
     }
@@ -961,19 +964,53 @@ class PhotoPreviewHelper {
      * 预览界面关闭时执行回调
      */
     private void callOnExit(Boolean start) {
-        if (mShareData != null) {
-            OnExitListener onExitListener = mShareData.onExitListener;
-            if (onExitListener != null) {
-                if (start == null) {
-                    onExitListener.onStart();
-                    onExitListener.onExit();
-                } else if (start) {
-                    onExitListener.onStart();
-                } else {
-                    onExitListener.onExit();
-                }
+        List<OnExitListener> list = new ArrayList<>();
+        if (mShareData != null && mShareData.onExitListener != null) {
+            list.add(mShareData.onExitListener);
+        }
+        
+        if (mExitListenerList != null) {
+            list.addAll(mExitListenerList);
+        }
+        
+        if (start == null) {
+            for (OnExitListener onExitListener : list) {
+                onExitListener.onStart();
+                onExitListener.onExit();
+            }
+            
+            if (mOpenListenerList != null) {
+                mOpenListenerList.clear();
+            }
+            
+            if (mExitListenerList != null) {
+                mExitListenerList.clear();
+            }
+            
+        } else if (start) {
+            for (OnExitListener onOpenListener : list) {
+                onOpenListener.onStart();
+            }
+        } else {
+            for (OnExitListener onOpenListener : list) {
+                onOpenListener.onExit();
+            }
+            
+            if (mOpenListenerList != null) {
+                mOpenListenerList.clear();
+            }
+            
+            if (mExitListenerList != null) {
+                mExitListenerList.clear();
             }
         }
+    }
+    
+    /**
+     * 预览打开动画执行结束
+     */
+    boolean isOpenAnimEnd() {
+        return mOpenAnimEnd;
     }
     
     /**
@@ -981,6 +1018,56 @@ class PhotoPreviewHelper {
      */
     public void setPosition(int position) {
         mPosition = position;
+    }
+    
+    /**
+     * 增加预览动画打开监听
+     */
+    void addOnOpenListener(OnOpenListener openListener) {
+        if (openListener == null) {
+            return;
+        }
+        
+        if (mOpenListenerList == null) {
+            mOpenListenerList = new ArrayList<>();
+        }
+        mOpenListenerList.add(openListener);
+    }
+    
+    /**
+     * 移除预览动画打开监听
+     */
+    void removeOnOpenListener(OnOpenListener openListener) {
+        if (openListener == null || mOpenListenerList == null) {
+            return;
+        }
+        
+        mOpenListenerList.remove(openListener);
+    }
+    
+    /**
+     * 增加预览动画关闭监听
+     */
+    void addOnExitListener(OnExitListener onExitListener) {
+        if (onExitListener == null) {
+            return;
+        }
+        
+        if (mExitListenerList == null) {
+            mExitListenerList = new ArrayList<>();
+        }
+        mExitListenerList.add(onExitListener);
+    }
+    
+    /**
+     * 移除预览动画关闭监听
+     */
+    void removeOnExitListener(OnExitListener onExitListener) {
+        if (onExitListener == null || mExitListenerList == null) {
+            return;
+        }
+        
+        mExitListenerList.remove(onExitListener);
     }
     
     /**

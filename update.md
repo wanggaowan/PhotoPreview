@@ -1,5 +1,9 @@
 版本更新日志
 
+### v2.4.1
+1. 修复window requestFeature异常
+2. 优化loading框加载断层问题
+
 ### v2.4.0
 1. Config删除openAnimDelayTime配置项，此配置只是旧版本为了解决部分机型预览动画无法做到无缝衔接而增加，新版本无需设置此值，已针对此问题做出优化
 2. 放弃旧版本预览逻辑，采用新的预览方案。旧版本采用ViewPager+Fragment，Fragment执行预览动画逻辑、预览图展示逻辑，此举会导致预览打开缓慢。新版本

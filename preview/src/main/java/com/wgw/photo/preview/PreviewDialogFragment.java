@@ -63,7 +63,6 @@ public class PreviewDialogFragment extends DialogFragment {
     
     FrameLayout mRootView;
     NoTouchExceptionViewPager mViewPager;
-    ProgressBar mLoading;
     private LinearLayout mLlDotIndicator;
     private ImageView mIvSelectDot;
     private TextView mTvTextIndicator;
@@ -108,6 +107,8 @@ public class PreviewDialogFragment extends DialogFragment {
     
     public PreviewDialogFragment() {
         setCancelable(false);
+        // 全屏处理
+        setStyle(STYLE_NO_TITLE, 0);
         mShareData = new ShareData();
     }
     
@@ -125,8 +126,6 @@ public class PreviewDialogFragment extends DialogFragment {
         }
         
         Window window = getDialog().getWindow();
-        // 全屏处理
-        window.requestFeature(Window.FEATURE_NO_TITLE);
         // 无论是否全屏显示，都允许内容绘制到耳朵区域
         NotchAdapterUtils.adapter(window, CutOutMode.ALWAYS);
         super.onActivityCreated(null);
@@ -243,10 +242,6 @@ public class PreviewDialogFragment extends DialogFragment {
             if (parent instanceof ViewGroup) {
                 // 为了下次重用mRootView
                 ((ViewGroup) parent).removeView(mRootView);
-            }
-            
-            if (mLoading != null) {
-                mRootView.removeView(mLoading);
             }
         }
         
@@ -383,7 +378,6 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     private void initViewData() {
-        initLoading();
         mCurrentPagerIndex = mShareData.config.defaultShowPosition;
         mShareData.openAnimDelayTime = getNeedDelayLoadTime();
         mPhotoPreviewHelper = new PhotoPreviewHelper(this, mCurrentPagerIndex);
@@ -395,24 +389,6 @@ public class PreviewDialogFragment extends DialogFragment {
         
         prepareIndicator();
         prepareViewPager();
-    }
-    
-    private void initLoading() {
-        mLoading = new ProgressBar(requireContext());
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        layoutParams.gravity = Gravity.CENTER;
-        mLoading.setLayoutParams(layoutParams);
-        mLoading.setId(R.id.loading);
-        mLoading.setVisibility(View.GONE);
-        if (mShareData.config.progressDrawable != null) {
-            mLoading.setIndeterminateDrawable(mShareData.config.progressDrawable);
-        }
-        
-        if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP && mShareData.config.progressColor != null) {
-            mLoading.setIndeterminateTintList(ColorStateList.valueOf(mShareData.config.progressColor));
-        }
-        
-        mRootView.addView(mLoading);
     }
     
     /**

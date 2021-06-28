@@ -7,17 +7,10 @@
     android:layout_height="match_parent"
     android:background="@color/transparent">
 
-    <com.wgw.photo.preview.NoTouchExceptionViewPager
-        android:id="@+id/viewpager"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:overScrollMode="never"
-        android:visibility="invisible" />
-
     <!--为什么要包裹一层，主要就是防止用户指定的缩略图(srcView)指定固定宽高，比如100dp,100dp
-    加入srcView父类宽高是50dp,100dp,那么srcView实际显示大小也只有50dp,100dp.为了处理此情况，
-    在iv_anim包裹一层，用于实现类似于srcView显示不全的情况
-    -->
+   加入srcView父类宽高是50dp,100dp,那么srcView实际显示大小也只有50dp,100dp.为了处理此情况，
+   在iv_anim包裹一层，用于实现类似于srcView显示不全的情况
+   -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -40,6 +33,12 @@
         </androidx.cardview.widget.CardView>
 
     </FrameLayout>
+
+    <com.wgw.photo.preview.NoTouchExceptionViewPager
+        android:id="@+id/viewpager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:overScrollMode="never" />
 
     <LinearLayout
         android:id="@+id/ll_dot_indicator_photo_preview"
