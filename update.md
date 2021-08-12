@@ -1,13 +1,16 @@
 版本更新日志
 
-### v2.4.2
+### v2.4.3
 1. 优化预览动画打开(背景还未完全置为不透明)时，缩略图位置保留底图，视觉上造成动画不是无缝衔接问题
 2. 优化非沉浸式界面，从非全屏打开全屏预览，在退出后，状态栏进入时有强烈顿挫感问题
 3. 增加`.openAnimStartHideOrShowStatusBar(boolean)`、`exitAnimStartHideOrShowStatusBar(boolean)`、`.showThumbnailViewMask(boolean)`配置项
 
-### v2.4.1
+### v2.4.2
 1. 修复window requestFeature异常
 2. 优化loading框加载断层问题
+
+### v2.4.1
+1. 修复打开预览动画时，如果预览大图已显示，但是加载loading未关闭Bug
 
 ### v2.4.0
 1. Config删除openAnimDelayTime配置项，此配置只是旧版本为了解决部分机型预览动画无法做到无缝衔接而增加，新版本无需设置此值，已针对此问题做出优化
@@ -51,9 +54,8 @@
 3. 对于异形屏、横竖屏都绘制到耳朵区域
 4. 优化大图拖拽，如果图片超出屏幕大小，则可上下左右拖拽一段距离，目的是防止非全屏状态下或异形屏下内容被遮挡
 
-
 ### v2.3.0~2.3.1
-1. 发现之前PhotoPreview设置list类型的数据不方便，必须要传List<Object>才调用sources(List)，其它都调用sources(Object...)，所以调整list为List<?>,只要是List类型就可以，不管泛型
+1. 发现之前PhotoPreview设置list类型的数据不方便，必须要传`List<Object>`才调用`sources(List)`，其它都调用`sources(Object...)`，所以调整list为`List<?>`,只要是List类型就可以，不管泛型
 
 ### v2.2
 1. 过渡动画使用Transition库实现，同时保留常规过渡动画实现方式，自动选择最佳过渡动画
