@@ -188,7 +188,13 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
             mIntAlpha = 255;
         }
         
-        mHelper.mFragment.mRootView.getBackground().setAlpha(mIntAlpha);
+        mHelper.mRootViewBgMask.getBackground().setAlpha(mIntAlpha);
+        if (mIntAlpha < 255) {
+            mHelper.mThumbnailViewMask.setVisibility(GONE);
+        } else {
+            mHelper.mThumbnailViewMask.setVisibility(VISIBLE);
+        }
+        
         if (scrollY < 0 && scale >= 0.6) {
             // 更改大小
             setScale(scale);

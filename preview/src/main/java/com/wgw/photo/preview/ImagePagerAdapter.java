@@ -114,6 +114,11 @@ class ImagePagerAdapter extends PagerAdapter {
             
             openListener = new OnOpenListener() {
                 @Override
+                public void onStartPre() {
+                
+                }
+                
+                @Override
                 public void onStart() {
                     photoView.setVisibility(View.INVISIBLE);
                 }
@@ -127,6 +132,11 @@ class ImagePagerAdapter extends PagerAdapter {
             helper.addOnOpenListener(openListener);
             
             exitListener = new PhotoPreviewHelper.OnExitListener() {
+                @Override
+                public void onStartPre() {
+                
+                }
+                
                 @Override
                 public void onStart() {
                     photoView.setVisibility(View.INVISIBLE);

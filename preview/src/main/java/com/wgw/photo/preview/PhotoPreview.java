@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
@@ -120,7 +121,7 @@ public class PhotoPreview {
      * 创建构建器，链式调用
      */
     public static Builder with(@NonNull FragmentActivity activity) {
-        assert activity != null;
+        Objects.requireNonNull(activity);
         return new Builder(activity);
     }
     
@@ -128,12 +129,12 @@ public class PhotoPreview {
      * 创建构建器，链式调用
      */
     public static Builder with(@NonNull Fragment fragment) {
-        assert fragment != null;
+        Objects.requireNonNull(fragment);
         return new Builder(fragment);
     }
     
     public PhotoPreview(@NonNull Builder builder) {
-        assert builder != null;
+        Objects.requireNonNull(builder);
         mFragmentActivity = builder.activity;
         mFragment = builder.fragment;
         mConfig = builder.mConfig;
@@ -143,7 +144,7 @@ public class PhotoPreview {
      * @param activity 当前图片预览所处Activity
      */
     public PhotoPreview(@NonNull FragmentActivity activity) {
-        assert activity != null;
+        Objects.requireNonNull(activity);
         mFragmentActivity = activity;
         mFragment = null;
         mConfig = new Config();
@@ -153,7 +154,7 @@ public class PhotoPreview {
      * @param fragment 当前图片预览所处fragment
      */
     public PhotoPreview(@NonNull Fragment fragment) {
-        assert fragment != null;
+        Objects.requireNonNull(fragment);
         mFragmentActivity = null;
         mFragment = fragment;
         mConfig = new Config();
@@ -254,7 +255,7 @@ public class PhotoPreview {
      * 设置图片地址
      */
     public void setSource(@NonNull Object... sources) {
-        assert sources != null;
+        Objects.requireNonNull(sources);
         setSource(Arrays.asList(sources));
     }
     
@@ -262,7 +263,7 @@ public class PhotoPreview {
      * 设置图片地址
      */
     public void setSource(@NonNull List<?> sources) {
-        assert sources != null;
+        Objects.requireNonNull(sources);
         mConfig.sources = sources;
     }
     
@@ -303,6 +304,27 @@ public class PhotoPreview {
     }
     
     /**
+     * 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作。如果该值设置为true，
+     * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿。
+     *
+     * @param doOP 是否执行操作，默认{@code false}。
+     */
+    public void setOpenAnimStartHideOrShowStatusBar(boolean doOP) {
+        mConfig.openAnimStartHideOrShowStatusBar = doOP;
+    }
+    
+    /**
+     * 是否在关闭预览动画执行开始的时候执行状态栏显示/隐藏操作。如果该值设置为false，
+     * 那么预览动画结束后，对于非沉浸式界面，由于要显示/隐藏状态栏，此时会有强烈的顿挫感。
+     * 因此设置为{@code false}时，建议采用沉浸式
+     *
+     * @param doOP 是否执行操作，默认{@code true}。
+     */
+    public void setExitAnimStartHideOrShowStatusBar(boolean doOP) {
+        mConfig.exitAnimStartHideOrShowStatusBar = doOP;
+    }
+    
+    /**
      * 不设置缩略图，预览界面打开关闭将只有从中心缩放动画
      */
     public void show() {
@@ -316,25 +338,7 @@ public class PhotoPreview {
      *                      如果多图预览，请使用{@link #show(IFindThumbnailView)}
      */
     public void show(final View thumbnailView) {
-        correctConfig();
-        final PreviewDialogFragment fragment
-            = mFragment == null ? getDialog(mFragmentActivity, true) : getDialog(mFragment, true);
-        final Lifecycle lifecycle = mFragment == null ? mFragmentActivity.getLifecycle() : mFragment.getLifecycle();
-        final FragmentManager fragmentManager
-            = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
-        if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
-            Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
-            fragment.show(context, fragmentManager, mConfig, thumbnailView);
-        } else if (lifecycle.getCurrentState() != State.DESTROYED) {
-            lifecycle.addObserver(new LifecycleObserver() {
-                @OnLifecycleEvent(Event.ON_CREATE)
-                public void onCreate() {
-                    lifecycle.removeObserver(this);
-                    Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
-                    fragment.show(context, fragmentManager, mConfig, thumbnailView);
-                }
-            });
-        }
+        show(thumbnailView, null);
     }
     
     /**
@@ -343,22 +347,36 @@ public class PhotoPreview {
      * @param findThumbnailView 多图预览时，打开和关闭预览时用于提供缩略图对象，用于过度动画
      */
     public void show(final IFindThumbnailView findThumbnailView) {
+        show(null, findThumbnailView);
+    }
+    
+    private void show(final View thumbnailView, final IFindThumbnailView findThumbnailView) {
         correctConfig();
         final PreviewDialogFragment fragment
-            = mFragment == null ? getDialog(mFragmentActivity, true) : getDialog(mFragment, true);
+            = mFragment == null ? getDialog(Objects.requireNonNull(mFragmentActivity), true) : getDialog(mFragment, true);
         final Lifecycle lifecycle = mFragment == null ? mFragmentActivity.getLifecycle() : mFragment.getLifecycle();
-        final FragmentManager fragmentManager
-            = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
         if (lifecycle.getCurrentState().isAtLeast(State.CREATED)) {
             Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
-            fragment.show(context, fragmentManager, mConfig, findThumbnailView);
+            FragmentManager fragmentManager
+                = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
+            if (thumbnailView != null) {
+                fragment.show(context, fragmentManager, mConfig, thumbnailView);
+            } else {
+                fragment.show(context, fragmentManager, mConfig, findThumbnailView);
+            }
         } else if (lifecycle.getCurrentState() != State.DESTROYED) {
             lifecycle.addObserver(new LifecycleObserver() {
                 @OnLifecycleEvent(Event.ON_CREATE)
                 public void onCreate() {
                     lifecycle.removeObserver(this);
                     Context context = mFragment == null ? mFragmentActivity : mFragment.getContext();
-                    fragment.show(context, fragmentManager, mConfig, findThumbnailView);
+                    FragmentManager fragmentManager
+                        = mFragment == null ? mFragmentActivity.getSupportFragmentManager() : mFragment.getChildFragmentManager();
+                    if (thumbnailView != null) {
+                        fragment.show(context, fragmentManager, mConfig, thumbnailView);
+                    } else {
+                        fragment.show(context, fragmentManager, mConfig, findThumbnailView);
+                    }
                 }
             });
         }
@@ -402,7 +420,7 @@ public class PhotoPreview {
      */
     public void dismiss(boolean callBack) {
         PreviewDialogFragment fragment
-            = mFragment == null ? getDialog(mFragmentActivity, false) : getDialog(mFragment, false);
+            = mFragment == null ? getDialog(Objects.requireNonNull(mFragmentActivity), false) : getDialog(mFragment, false);
         if (fragment != null) {
             fragment.dismiss(callBack);
         }
@@ -527,7 +545,7 @@ public class PhotoPreview {
          * 数据源
          */
         public Builder sources(@NonNull Object... sources) {
-            assert sources != null;
+            Objects.requireNonNull(sources);
             return sources(Arrays.asList(sources));
         }
         
@@ -535,7 +553,7 @@ public class PhotoPreview {
          * 数据源
          */
         public Builder sources(@NonNull List<?> sources) {
-            assert sources != null;
+            Objects.requireNonNull(sources);
             mConfig.sources = sources;
             return this;
         }
@@ -585,6 +603,29 @@ public class PhotoPreview {
          */
         public Builder shapeCornerRadius(int radius) {
             mConfig.shapeCornerRadius = radius;
+            return this;
+        }
+        
+        /**
+         * 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作。如果该值设置为true，
+         * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿。
+         *
+         * @param doOP 是否执行操作，默认{@code false}。
+         */
+        public Builder openAnimStartHideOrShowStatusBar(boolean doOP) {
+            mConfig.openAnimStartHideOrShowStatusBar = doOP;
+            return this;
+        }
+        
+        /**
+         * 是否在关闭预览动画执行开始的时候执行状态栏显示/隐藏操作。如果该值设置为false，
+         * 那么预览动画结束后，对于非沉浸式界面，由于要显示/隐藏状态栏，此时会有强烈的顿挫感。
+         * 因此设置为{@code false}时，建议采用沉浸式
+         *
+         * @param doOP 是否执行操作，默认{@code true}。
+         */
+        public Builder exitAnimStartHideOrShowStatusBar(boolean doOP) {
+            mConfig.exitAnimStartHideOrShowStatusBar = doOP;
             return this;
         }
         

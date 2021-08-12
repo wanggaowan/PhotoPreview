@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff.Mode;
@@ -15,19 +14,17 @@ import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.view.Gravity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.wgw.photo.preview.PreloadImageView.DrawableLoadListener;
@@ -37,7 +34,8 @@ import com.wgw.photo.preview.util.SpannableString;
 import com.wgw.photo.preview.util.Utils;
 import com.wgw.photo.preview.util.notch.CutOutMode;
 import com.wgw.photo.preview.util.notch.NotchAdapterUtils;
-import com.wgw.photo.preview.util.notch.OSUtils;
+
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -130,7 +128,8 @@ public class PreviewDialogFragment extends DialogFragment {
         NotchAdapterUtils.adapter(window, CutOutMode.ALWAYS);
         super.onActivityCreated(null);
         
-        boolean fullScreen = isFullScreen();
+        // 以下代码必须在super.onActivityCreated之后调用才有效
+        boolean isParentFullScreen = isParentFullScreen();
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
             // 需要设置这个才能设置状态栏和导航栏颜色，此时布局内容可绘制到状态栏之下
@@ -145,7 +144,7 @@ public class PreviewDialogFragment extends DialogFragment {
         
         if (mShareData.config.fullScreen == null) {
             // 跟随父窗口
-            if (fullScreen) {
+            if (isParentFullScreen) {
                 lp.flags |= LayoutParams.FLAG_FULLSCREEN;
             } else {
                 lp.flags |= LayoutParams.FLAG_FORCE_NOT_FULLSCREEN;
@@ -158,35 +157,42 @@ public class PreviewDialogFragment extends DialogFragment {
         
         // 沉浸式处理
         // OPPO ANDROID P 之后的系统需要设置沉浸式配合异形屏适配才能将内容绘制到耳朵区域
-        if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN) {
-            // 防止系统栏隐藏时内容区域大小发生变化
-            int uiFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-            // window全屏显示，但状态栏不会被隐藏，状态栏依然可见，内容可绘制到状态栏之下
-            uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-            // window全屏显示，但导航栏不会被隐藏，导航栏依然可见，内容可绘制到导航栏之下
-            uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
-            if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
-                // 对于OPPO ANDROID P 之后的系统,一定需要清除此标志，否则异形屏无法绘制到耳朵区域下面
-                window.clearFlags(LayoutParams.FLAG_TRANSLUCENT_STATUS);
-                // 设置之后不会通过触摸屏幕调出导航栏
-                // uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE; // 通过系统上滑或者下滑拉出导航栏后不会自动隐藏
-                uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY; // 通过系统上滑或者下滑拉出导航栏后会自动隐藏
-            }
-            
-            if (mShareData.config.fullScreen == null && fullScreen) {
-                // 隐藏状态栏
-                uiFlags |= View.INVISIBLE;
-            }
-            
-            window.getDecorView().setSystemUiVisibility(uiFlags);
-            window.getDecorView().setPadding(0, 0, 0, 0);
+        // 防止系统栏隐藏时内容区域大小发生变化
+        int uiFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+        // window全屏显示，但状态栏不会被隐藏，状态栏依然可见，内容可绘制到状态栏之下
+        uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+        // window全屏显示，但导航栏不会被隐藏，导航栏依然可见，内容可绘制到导航栏之下
+        uiFlags |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+            // 对于OPPO ANDROID P 之后的系统,一定需要清除此标志，否则异形屏无法绘制到耳朵区域下面
+            window.clearFlags(LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            // 设置之后不会通过触摸屏幕调出导航栏
+            // uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE; // 通过系统上滑或者下滑拉出导航栏后不会自动隐藏
+            uiFlags |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY; // 通过系统上滑或者下滑拉出导航栏后会自动隐藏
         }
+        
+        if (mShareData.config.fullScreen == null && isParentFullScreen) {
+            // 隐藏状态栏
+            uiFlags |= View.INVISIBLE;
+        }
+        
+        window.getDecorView().setSystemUiVisibility(uiFlags);
+        window.getDecorView().setPadding(0, 0, 0, 0);
     }
     
     /**
      * 初始化是否全屏展示
      */
-    private void initFullScreen() {
+    private void initFullScreen(boolean start) {
+        if (mShareData.config.fullScreen == null) {
+            return;
+        }
+        
+        boolean isParentFullScreen = isParentFullScreen();
+        if (isParentFullScreen == mShareData.config.fullScreen) {
+            return;
+        }
+        
         Dialog dialog = getDialog();
         if (dialog == null) {
             return;
@@ -197,7 +203,17 @@ public class PreviewDialogFragment extends DialogFragment {
             return;
         }
         
-        if (isFullScreen()) {
+        if (start) {
+            if (mShareData.config.fullScreen) {
+                window.clearFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+                window.addFlags(LayoutParams.FLAG_FULLSCREEN);
+                View decorView = window.getDecorView();
+                decorView.setSystemUiVisibility(decorView.getSystemUiVisibility() | View.INVISIBLE);
+            } else {
+                window.clearFlags(LayoutParams.FLAG_FULLSCREEN);
+                window.addFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            }
+        } else if (isParentFullScreen()) {
             window.clearFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
             window.addFlags(LayoutParams.FLAG_FULLSCREEN);
             View decorView = window.getDecorView();
@@ -222,8 +238,8 @@ public class PreviewDialogFragment extends DialogFragment {
         }
         
         if (mSelfDismissDialog == null && savedInstanceState == null) {
-            initViewData();
             initEvent();
+            initViewData();
             mDismiss = false;
         } else if (savedInstanceState != null || !mSelfDismissDialog) {
             // 被回收后恢复，则关闭弹窗
@@ -266,20 +282,9 @@ public class PreviewDialogFragment extends DialogFragment {
     }
     
     /**
-     * 是否全屏显示
-     */
-    private boolean isFullScreen() {
-        if (mShareData.config.fullScreen != null) {
-            return mShareData.config.fullScreen;
-        }
-        
-        return isParentFullScreen();
-    }
-    
-    /**
      * 父窗口是否全屏显示
      */
-    private boolean isParentFullScreen() {
+    boolean isParentFullScreen() {
         FragmentActivity activity = getActivity();
         if (activity == null || activity.getWindow() == null) {
             return true;
@@ -379,7 +384,6 @@ public class PreviewDialogFragment extends DialogFragment {
     
     private void initViewData() {
         mCurrentPagerIndex = mShareData.config.defaultShowPosition;
-        mShareData.openAnimDelayTime = getNeedDelayLoadTime();
         mPhotoPreviewHelper = new PhotoPreviewHelper(this, mCurrentPagerIndex);
         
         mLlDotIndicator.setVisibility(View.GONE);
@@ -391,47 +395,42 @@ public class PreviewDialogFragment extends DialogFragment {
         prepareViewPager();
     }
     
-    /**
-     * 获取需要延迟加载时间
-     */
-    private long getNeedDelayLoadTime() {
-        if (mShareData.config.fullScreen == null) {
-            // 预览是否全屏跟随父窗口
-            return 0;
-        }
-        
-        // 新实现方案，不会因为状态栏进入退出导致动画过渡错位
-        // if (OSUtils.isMI6()) {
-        //     boolean previewFullScreen = mShareData.config.fullScreen;
-        //     boolean parentFullScreen = isParentFullScreen();
-        //     if ((previewFullScreen && !parentFullScreen)
-        //         || (!previewFullScreen && parentFullScreen)) {
-        //         // 小米6手机从非全屏转化为全屏，或全屏转化为非全屏，此时状态栏退出有动画，预览界面不能立即充满，因此延迟等待
-        //         return 350;
-        //     }
-        // }
-        
-        return 0;
-    }
-    
     private void initEvent() {
         mShareData.onOpenListener = new PhotoPreviewHelper.OnOpenListener() {
             
             @Override
+            public void onStartPre() {
+                if (mShareData.config.openAnimStartHideOrShowStatusBar) {
+                    initFullScreen(true);
+                }
+            }
+            
+            @Override
             public void onStart() {
                 // 对于强制指定是否全屏，需要此处初始化状态栏隐藏逻辑，否则在MIUI系统上，从嵌套多层的Fragment预览会出现卡顿
-                initFullScreen();
                 mViewPager.setTouchEnable(false);
             }
             
             @Override
             public void onEnd() {
+                if (!mShareData.config.openAnimStartHideOrShowStatusBar) {
+                    initFullScreen(true);
+                }
                 setIndicatorVisible(true);
                 mViewPager.setTouchEnable(true);
             }
         };
         
         mShareData.onExitListener = new PhotoPreviewHelper.OnExitListener() {
+            @Override
+            public void onStartPre() {
+                if (mShareData.config.exitAnimStartHideOrShowStatusBar) {
+                    initFullScreen(false);
+                } else {
+                    Log.e("xxx","exit pre 未执行");
+                }
+            }
+            
             @Override
             public void onStart() {
                 setIndicatorVisible(false);
@@ -440,6 +439,10 @@ public class PreviewDialogFragment extends DialogFragment {
             
             @Override
             public void onExit() {
+                if (!mShareData.config.exitAnimStartHideOrShowStatusBar) {
+                    initFullScreen(false);
+                    Log.e("xxx","exit 执行");
+                }
                 mViewPager.setTouchEnable(true);
                 if (mSelfDismissDialog != null) {
                     return;
@@ -520,7 +523,7 @@ public class PreviewDialogFragment extends DialogFragment {
                     gradientDrawable = (GradientDrawable) ContextCompat.getDrawable(context, R.drawable.selected_dot);
                 }
                 
-                gradientDrawable.setColorFilter(mShareData.config.selectIndicatorColor, Mode.SRC_OVER);
+                Objects.requireNonNull(gradientDrawable).setColorFilter(mShareData.config.selectIndicatorColor, Mode.SRC_OVER);
                 mIvSelectDot.setImageDrawable(gradientDrawable);
             }
             
@@ -536,7 +539,7 @@ public class PreviewDialogFragment extends DialogFragment {
                 AppCompatImageView iv = new AppCompatImageView(context);
                 GradientDrawable shapeDrawable = (GradientDrawable) ContextCompat.getDrawable(context, R.drawable.no_selected_dot);
                 if (mShareData.config.normalIndicatorColor != 0xFFAAAAAA) {
-                    shapeDrawable.setColorFilter(mShareData.config.normalIndicatorColor, Mode.SRC_OVER);
+                    Objects.requireNonNull(shapeDrawable).setColorFilter(mShareData.config.normalIndicatorColor, Mode.SRC_OVER);
                 }
                 iv.setImageDrawable(shapeDrawable);
                 iv.setLayoutParams(dotParams);
@@ -583,7 +586,7 @@ public class PreviewDialogFragment extends DialogFragment {
             mLlDotIndicator.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
-                    mLlDotIndicator.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    mLlDotIndicator.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     
                     View childAt = mLlDotIndicator.getChildAt(0);
                     FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mIvSelectDot.getLayoutParams();

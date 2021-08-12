@@ -1,5 +1,10 @@
 版本更新日志
 
+### v2.4.2
+1. 优化预览动画打开(背景还未完全置为不透明)时，缩略图位置保留底图，视觉上造成动画不是无缝衔接问题
+2. 优化非沉浸式界面，从非全屏打开全屏预览，在退出后，状态栏进入时有强烈顿挫感问题
+3. 增加`.openAnimStartHideOrShowStatusBar(boolean)`和`exitAnimStartHideOrShowStatusBar(boolean)`配置项
+
 ### v2.4.1
 1. 修复window requestFeature异常
 2. 优化loading框加载断层问题
@@ -15,7 +20,7 @@
 2. 优化动画打开速度
 
 ### v2.3.8
-1. 新增.with(fragment)预览
+1. 新增`.with(fragment)`预览
 2. 修复MIUI系统(其它系统暂未发现问题)全屏预览时，从嵌套多层fragment中打开预览时卡顿问题
 3. 支持预览已打开情况下更改预览内容
 
@@ -67,7 +72,7 @@
 4. 移除内嵌PhotoView，采用依赖方式
 
 ### v1.5
-1. PhotoPreview增加dismiss()、dismiss(boolean callBack)方法
+1. PhotoPreview增加`dismiss()`、`dismiss(boolean)`方法
 2. 修复横屏状态下，原始View的x轴坐标计算错误，导致关闭时，预览图缩放时未正确与原图重合Bug
 
 ### v1.4
