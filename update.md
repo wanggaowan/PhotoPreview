@@ -3,7 +3,7 @@
 ### v2.4.2
 1. 优化预览动画打开(背景还未完全置为不透明)时，缩略图位置保留底图，视觉上造成动画不是无缝衔接问题
 2. 优化非沉浸式界面，从非全屏打开全屏预览，在退出后，状态栏进入时有强烈顿挫感问题
-3. 增加`.openAnimStartHideOrShowStatusBar(boolean)`和`exitAnimStartHideOrShowStatusBar(boolean)`配置项
+3. 增加`.openAnimStartHideOrShowStatusBar(boolean)`、`exitAnimStartHideOrShowStatusBar(boolean)`、`.showThumbnailViewMask(boolean)`配置项
 
 ### v2.4.1
 1. 修复window requestFeature异常

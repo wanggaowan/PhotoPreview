@@ -93,6 +93,7 @@ PhotoPreview
     .animDuration(400) // 动画时间，null：使用默认时间，<=0: 不执行动画
     .shapeTransformType(ShapeTransformType.CIRCLE) // 图形变换类型，针对缩略图是圆形或圆角矩形
     .shapeCornerRadius(50) // 仅当图形变换类型设置为ShapeTransformType.ROUND_RECT时，指定圆角矩形圆角半径
+    .showThumbnailViewMask(true) // 是否展示缩略图蒙层
     .openAnimStartHideOrShowStatusBar(false) // 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作
     .exitAnimStartHideOrShowStatusBar(true) // 是否在关闭预览动画执行开始的时候执行状态栏显示/隐藏操作
     .build()

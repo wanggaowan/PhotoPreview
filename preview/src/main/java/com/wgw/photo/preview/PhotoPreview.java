@@ -304,10 +304,19 @@ public class PhotoPreview {
     }
     
     /**
+     * 是否展示缩略图蒙层,如果设置为{@code true},则预览动画执行时,缩略图处背景与父类一致,仅取背景为纯色有效
+     *
+     * @param show 是否显示蒙层，默认{@code true}
+     */
+    public void setShowThumbnailViewMask(boolean show) {
+        mConfig.showThumbnailViewMask = show;
+    }
+    
+    /**
      * 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作。如果该值设置为true，
      * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿。
      *
-     * @param doOP 是否执行操作，默认{@code false}。
+     * @param doOP 是否执行操作，默认{@code false}
      */
     public void setOpenAnimStartHideOrShowStatusBar(boolean doOP) {
         mConfig.openAnimStartHideOrShowStatusBar = doOP;
@@ -318,7 +327,7 @@ public class PhotoPreview {
      * 那么预览动画结束后，对于非沉浸式界面，由于要显示/隐藏状态栏，此时会有强烈的顿挫感。
      * 因此设置为{@code false}时，建议采用沉浸式
      *
-     * @param doOP 是否执行操作，默认{@code true}。
+     * @param doOP 是否执行操作，默认{@code true}
      */
     public void setExitAnimStartHideOrShowStatusBar(boolean doOP) {
         mConfig.exitAnimStartHideOrShowStatusBar = doOP;
@@ -607,10 +616,20 @@ public class PhotoPreview {
         }
         
         /**
+         * 是否展示缩略图蒙层,如果设置为{@code true},则预览动画执行时,缩略图处背景与父类一致,仅取背景为纯色有效
+         *
+         * @param show 是否显示蒙层，默认{@code true}
+         */
+        public Builder showThumbnailViewMask(boolean show) {
+            mConfig.showThumbnailViewMask = show;
+            return this;
+        }
+        
+        /**
          * 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作。如果该值设置为true，
          * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿。
          *
-         * @param doOP 是否执行操作，默认{@code false}。
+         * @param doOP 是否执行操作，默认{@code false}
          */
         public Builder openAnimStartHideOrShowStatusBar(boolean doOP) {
             mConfig.openAnimStartHideOrShowStatusBar = doOP;
@@ -622,7 +641,7 @@ public class PhotoPreview {
          * 那么预览动画结束后，对于非沉浸式界面，由于要显示/隐藏状态栏，此时会有强烈的顿挫感。
          * 因此设置为{@code false}时，建议采用沉浸式
          *
-         * @param doOP 是否执行操作，默认{@code true}。
+         * @param doOP 是否执行操作，默认{@code true}
          */
         public Builder exitAnimStartHideOrShowStatusBar(boolean doOP) {
             mConfig.exitAnimStartHideOrShowStatusBar = doOP;

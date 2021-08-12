@@ -332,6 +332,11 @@ class PhotoPreviewHelper {
      * 初始化缩略图蒙层数据
      */
     private void initThumbnailViewMask(int offset) {
+        if (!mShareData.config.showThumbnailViewMask) {
+            mThumbnailViewMask.setBackground(null);
+            return;
+        }
+        
         Drawable srcViewBg = getSrcViewBg(mThumbnailView);
         if (srcViewBg != null) {
             mThumbnailViewMask.setTranslationX(mSrcImageLocation[0]);
@@ -810,7 +815,7 @@ class PhotoPreviewHelper {
                     }
                 });
             
-            if (mShareData.config.shapeTransformType != null) {
+            if (mShareData != null && mShareData.config.shapeTransformType != null) {
                 if (mShareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
                     transitionSet.addTransition(
                         new ChangeShape(0, Math.min(mSrcViewSize[0], mSrcViewSize[1]) / 2f)
@@ -825,7 +830,7 @@ class PhotoPreviewHelper {
             TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
             
             mHelperViewParent.setTranslationX(mSrcImageLocation[0]);
-            mHelperViewParent.setTranslationY(mSrcImageLocation[1] + (mShareData.config.exitAnimStartHideOrShowStatusBar ? offset : 0));
+            mHelperViewParent.setTranslationY(mSrcImageLocation[1] + (mShareData != null && mShareData.config.exitAnimStartHideOrShowStatusBar ? offset : 0));
             setViewSize(mHelperViewParent, mSrcViewParentSize[0], mSrcViewParentSize[1]);
             
             setHelperViewDataByThumbnail();

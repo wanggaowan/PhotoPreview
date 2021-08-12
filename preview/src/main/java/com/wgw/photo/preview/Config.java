@@ -49,6 +49,11 @@ public class Config {
     public int shapeCornerRadius = 0;
     
     /**
+     * 是否展示缩略图蒙层,如果设置为{@code true},则预览动画执行时,缩略图处背景与父类一致,仅取背景为纯色有效
+     */
+    public boolean showThumbnailViewMask = true;
+    
+    /**
      * 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作。如果该值设置为true，
      * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿。
      */
@@ -82,6 +87,7 @@ public class Config {
         this.animDuration = config.animDuration;
         this.shapeTransformType = config.shapeTransformType;
         this.shapeCornerRadius = config.shapeCornerRadius;
+        this.showThumbnailViewMask = config.showThumbnailViewMask;
         this.openAnimStartHideOrShowStatusBar = config.openAnimStartHideOrShowStatusBar;
         this.exitAnimStartHideOrShowStatusBar = config.exitAnimStartHideOrShowStatusBar;
     }
@@ -103,6 +109,7 @@ public class Config {
         this.animDuration = null;
         this.shapeTransformType = null;
         this.shapeCornerRadius = 0;
+        this.showThumbnailViewMask = true;
         this.openAnimStartHideOrShowStatusBar = false;
         this.exitAnimStartHideOrShowStatusBar = true;
     }
