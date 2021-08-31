@@ -49,7 +49,7 @@ public class Config {
     public int shapeCornerRadius = 0;
     
     /**
-     * 是否展示缩略图蒙层,如果设置为{@code true},则预览动画执行时,缩略图处背景与父类一致,仅取背景为纯色有效
+     * 是否展示缩略图蒙层,如果设置为{@code true},则预览动画执行时,缩略图不显示，预览更沉浸
      */
     public boolean showThumbnailViewMask = true;
     

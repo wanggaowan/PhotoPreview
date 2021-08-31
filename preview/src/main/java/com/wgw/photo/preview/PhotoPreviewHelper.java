@@ -108,7 +108,6 @@ class PhotoPreviewHelper {
     // 2. 预览动画开始时，需要对图片进行位移，裁减等操作，而预览大图加载时，不能调整其大小和缩放类型，否则预览大图显示将出现问题
     private final ImageView mHelperView;
     private final FrameLayout mHelperViewParent;
-    final View mThumbnailViewMask;
     final FrameLayout mRootViewBgMask;
     private final ShareData mShareData;
     
@@ -118,6 +117,7 @@ class PhotoPreviewHelper {
     private int mOldPosition = -1;
     
     private View mThumbnailView;
+    private int mThumbnailViewVisibility = View.VISIBLE;
     private ScaleType mThumbnailViewScaleType;
     // 当前界面是否需要执行动画
     private boolean mNeedInAnim;
@@ -146,12 +146,10 @@ class PhotoPreviewHelper {
         
         mFragment.mRootView.setFocusableInTouchMode(true);
         mFragment.mRootView.requestFocus();
+        mRootViewBgMask = mFragment.mRootView;
         mHelperView = mFragment.mRootView.findViewById(R.id.iv_anim);
         mHelperViewParent = mFragment.mRootView.findViewById(R.id.fl_parent);
-        mThumbnailViewMask = mFragment.mRootView.findViewById(R.id.thumbMask);
-        mRootViewBgMask = mFragment.mRootView.findViewById(R.id.fl_mask);
         
-        mThumbnailViewMask.setVisibility(View.GONE);
         mRootViewBgMask.setBackgroundColor(Color.TRANSPARENT);
         
         mHelperViewParent.setVisibility(View.INVISIBLE);
@@ -194,6 +192,9 @@ class PhotoPreviewHelper {
     private void initData() {
         if (mPosition != mOldPosition) {
             mThumbnailView = getThumbnailView(mShareData);
+            if (mThumbnailView != null) {
+                mThumbnailViewVisibility = mThumbnailView.getVisibility();
+            }
             mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
             initThumbnailViewScaleType();
             mOldPosition = mPosition;
@@ -319,8 +320,6 @@ class PhotoPreviewHelper {
         getSrcViewSize(thumbnailView);
         getSrcViewLocation(thumbnailView);
         
-        initThumbnailViewMask(0);
-        
         mHelperViewParent.setTranslationX(mSrcImageLocation[0]);
         mHelperViewParent.setTranslationY(mSrcImageLocation[1]);
         setViewSize(mHelperViewParent, mSrcViewParentSize[0], mSrcViewParentSize[1]);
@@ -329,23 +328,14 @@ class PhotoPreviewHelper {
     }
     
     /**
-     * 初始化缩略图蒙层数据
+     * 展示/隐藏缩略图蒙层数据
      */
-    private void initThumbnailViewMask(int offset) {
+    void showThumbnailViewMask(boolean show) {
         if (!mShareData.config.showThumbnailViewMask) {
-            mThumbnailViewMask.setBackground(null);
             return;
         }
         
-        Drawable srcViewBg = getSrcViewBg(mThumbnailView);
-        if (srcViewBg != null) {
-            mThumbnailViewMask.setTranslationX(mSrcImageLocation[0]);
-            mThumbnailViewMask.setTranslationY(mSrcImageLocation[1] + offset);
-            setViewSize(mThumbnailViewMask, mSrcViewSize[0], mSrcViewSize[1]);
-            mThumbnailViewMask.setBackground(srcViewBg);
-        } else {
-            mThumbnailViewMask.setBackground(null);
-        }
+        mThumbnailView.setVisibility(show ? View.INVISIBLE : mThumbnailViewVisibility);
     }
     
     /**
@@ -571,13 +561,15 @@ class PhotoPreviewHelper {
                 public void onTransitionStart(@NonNull Transition transition) {
                     callOnOpen(ANIM_START);
                     mHelpViewCanSetImage = false;
-                    mHelperViewParent.setVisibility(View.VISIBLE);
-                    mThumbnailViewMask.setVisibility(View.VISIBLE);
                     doViewBgAnim(Color.BLACK, mAnimDuration, null);
+                    mHelperViewParent.setVisibility(View.VISIBLE);
+                    // 不延迟会有闪屏
+                    mThumbnailView.postDelayed(() -> showThumbnailViewMask(true), mAnimDuration / 10);
                 }
                 
                 @Override
                 public void onTransitionEnd(@NonNull Transition transition) {
+                    showThumbnailViewMask(false);
                     mHelpViewCanSetImage = true;
                     mHelperViewParent.setVisibility(View.INVISIBLE);
                     callOnOpen(ANIM_END);
@@ -670,6 +662,9 @@ class PhotoPreviewHelper {
         View openThumbnailView = mThumbnailView;
         if (mPosition != mOldPosition) {
             mThumbnailView = getThumbnailView(mShareData);
+            if (mThumbnailView != null) {
+                mThumbnailViewVisibility = mThumbnailView.getVisibility();
+            }
             mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
             initThumbnailViewScaleType();
             mOldPosition = mPosition;
@@ -759,7 +754,7 @@ class PhotoPreviewHelper {
     /**
      * 使用Transition库实现过度动画
      */
-    private void exitAnimByTransition(final View thumbnailView, PhotoView photoView, View openThumbnailView) {
+    private void exitAnimByTransition(final View thumbnailView, final PhotoView photoView, View openThumbnailView) {
         mHelperView.setScaleType(ScaleType.FIT_CENTER);
         mHelperView.setImageDrawable(photoView.getDrawable());
         
@@ -789,11 +784,6 @@ class PhotoPreviewHelper {
         
         callOnExit(ANIM_START_PRE);
         
-        if (photoView.getScale() >= 1) {
-            initThumbnailViewMask(mShareData.config.exitAnimStartHideOrShowStatusBar ? offset : 0);
-            mThumbnailViewMask.setVisibility(View.VISIBLE);
-        }
-        
         mHelperView.post(() -> {
             TransitionSet transitionSet = new TransitionSet()
                 .setDuration(mAnimDuration)
@@ -804,12 +794,16 @@ class PhotoPreviewHelper {
                 .addListener(new TransitionListenerAdapter() {
                     @Override
                     public void onTransitionEnd(@NonNull Transition transition) {
+                        showThumbnailViewMask(false);
                         callOnExit(ANIM_END);
                     }
                     
                     @Override
                     public void onTransitionStart(@NonNull Transition transition) {
                         callOnExit(ANIM_START);
+                        if (photoView.getScale() >= 1) {
+                            showThumbnailViewMask(true);
+                        }
                         mHelperViewParent.setVisibility(View.VISIBLE);
                         doViewBgAnim(Color.TRANSPARENT, mAnimDuration, null);
                     }
