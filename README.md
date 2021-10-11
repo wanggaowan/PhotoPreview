@@ -2,12 +2,9 @@
 
 仿微信朋友圈图片预览，目前仅支持图片预览
 
-优劣势(单论只需要预览图片需求)：
- * 对于异形屏，尝试了一些github图片预览库，发现横屏状态下，缩略图与预览图过渡动画并不能无缝衔接。
- 此库适配了异形屏，横屏状态下缩略图与预览图过渡动画之间无缝衔接
+主要特色：
+ * 此库适配了异形屏
  * 适配了常用的使用场景，优化各种图片缩放类型下的过渡动画，提供完善的过渡动画
- * 不足之处在于还未完全解决状态栏隐藏显示动画问题(会导致预览卡顿)，目前默认操作是打开预览时，等待动画结束再显示或隐藏状态栏。
-   建议界面采用沉浸式，推荐一个实现沉浸式的库[ImmersionBar](https://github.com/gyf-dev/ImmersionBar)
 
 
 [github地址](https://github.com/wanggaowan/PhotoPreview)
@@ -93,9 +90,8 @@ PhotoPreview
     .animDuration(400) // 动画时间，null：使用默认时间，<=0: 不执行动画
     .shapeTransformType(ShapeTransformType.CIRCLE) // 图形变换类型，针对缩略图是圆形或圆角矩形
     .shapeCornerRadius(50) // 仅当图形变换类型设置为ShapeTransformType.ROUND_RECT时，指定圆角矩形圆角半径
-    .showThumbnailViewMask(true) // 是否展示缩略图蒙层
-    .openAnimStartHideOrShowStatusBar(false) // 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作
-    .exitAnimStartHideOrShowStatusBar(true) // 是否在关闭预览动画执行开始的时候执行状态栏显示/隐藏操作
+    .showThumbnailViewMask(true) // 是否展示缩略图蒙层，如果设置为true,则预览动画执行时,缩略图不显示，预览更沉浸
+    .openAnimStartHideOrShowStatusBar(true) // 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作
     .build()
     .show(thumbnailView); // 展示预览，有show()、show(View)、show(IFindThumbnailView)三个重载
 ```
@@ -121,6 +117,8 @@ PhotoPreview
    因此缩略图尽量不使用ScaleType.MATRIX缩放类型
 2. 指定缩略图变换类型为`.shapeTransformType(ShapeTransformType.CIRCLE)`时，如果缩略图宽高不相等，那么指定缩列图缩放类型为ScaleType.FIT_XY、
    ScaleType.CENTER_CROP后，预览动画不能无缝衔接，因此需要切圆的缩列图，尽量保证控件宽高一致或使用其它缩放类型
+3. 打开预览时，如果预览动画时间大于状态栏动画时间时，可能出现预览动画卡顿。默认预览动画时间小于状态栏动画时间，如果大于，
+   可通过`.openAnimStartHideOrShowStatusBar(false)`,避免预览动画与状态栏动画交替执行
 
 
 ## **感谢**

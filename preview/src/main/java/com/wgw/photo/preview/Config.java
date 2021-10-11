@@ -55,16 +55,16 @@ public class Config {
     
     /**
      * 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作。如果该值设置为true，
-     * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿。
+     * 那么预览动画打开时，由于状态栏退出/进入有动画，可能导致预览动画卡顿(预览动画时间大于状态栏动画时间时发生)。
      */
-    public boolean openAnimStartHideOrShowStatusBar = false;
+    public boolean openAnimStartHideOrShowStatusBar = true;
     
     /**
      * 是否在关闭预览动画执行开始的时候执行状态栏显示/隐藏操作。如果该值设置为false，
      * 那么预览动画结束后，对于非沉浸式界面，由于要显示/隐藏状态栏，此时会有强烈的顿挫感。
      * 因此设置为{@code false}时，建议采用沉浸式
      */
-    public boolean exitAnimStartHideOrShowStatusBar = true;
+    boolean exitAnimStartHideOrShowStatusBar = true;
     
     public void apply(Config config) {
         if (config == null) {

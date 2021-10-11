@@ -426,8 +426,6 @@ public class PreviewDialogFragment extends DialogFragment {
             public void onStartPre() {
                 if (mShareData.config.exitAnimStartHideOrShowStatusBar) {
                     initFullScreen(false);
-                } else {
-                    Log.e("xxx","exit pre 未执行");
                 }
             }
             
@@ -441,7 +439,6 @@ public class PreviewDialogFragment extends DialogFragment {
             public void onExit() {
                 if (!mShareData.config.exitAnimStartHideOrShowStatusBar) {
                     initFullScreen(false);
-                    Log.e("xxx","exit 执行");
                 }
                 mViewPager.setTouchEnable(true);
                 if (mSelfDismissDialog != null) {
