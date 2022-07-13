@@ -92,6 +92,7 @@ PhotoPreview
     .shapeCornerRadius(50) // 仅当图形变换类型设置为ShapeTransformType.ROUND_RECT时，指定圆角矩形圆角半径
     .showThumbnailViewMask(true) // 是否展示缩略图蒙层，如果设置为true,则预览动画执行时,缩略图不显示，预览更沉浸
     .openAnimStartHideOrShowStatusBar(true) // 是否在打开预览动画执行开始的时候执行状态栏隐藏/显示操作
+    .onPageChangeListener(listener) // 图片滑动/选中/滑动状态变更监听
     .build()
     .show(thumbnailView); // 展示预览，有show()、show(View)、show(IFindThumbnailView)三个重载
 ```
