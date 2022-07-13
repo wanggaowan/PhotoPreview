@@ -7,12 +7,13 @@ import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import com.wgw.photo.preview.PhotoPreviewHelper.OnOpenListener;
+import com.wgw.photo.preview.interfaces.OnImageLongClickListener;
+import com.wgw.photo.preview.interfaces.OnLongClickListener;
 
 import java.util.List;
 
@@ -99,7 +100,7 @@ class ImagePagerAdapter extends PagerAdapter {
             int size = sources == null ? 0 : sources.size();
             photoView.setEndView(position == size - 1);
             
-            initEvent();
+            initEvent(position);
             initLoading();
             loadImage(photoView, position);
         }
@@ -157,12 +158,12 @@ class ImagePagerAdapter extends PagerAdapter {
             helper.removeOnExitListener(exitListener);
         }
         
-        private void initEvent() {
+        private void initEvent(int position) {
             photoView.setOnLongClickListener(v -> {
                 if (shareData != null) {
-                    OnLongClickListener listener = shareData.onLongClickListener;
+                    OnImageLongClickListener listener = shareData.onLongClickListener;
                     if (listener != null) {
-                        listener.onLongClick(root);
+                        listener.onLongClick(position, photoView);
                     }
                 }
                 

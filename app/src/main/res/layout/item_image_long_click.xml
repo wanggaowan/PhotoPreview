@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#3f000000"
+    tools:ignore="MissingDefaultResource">
+
+
+    <TextView
+        android:id="@+id/tv_close"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@color/white"
+        android:gravity="center"
+        android:text="关闭自定义界面"
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="1px"
+        android:background="@color/white"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="这是自定义界面，可以实现图片分享，保存到相册等自定义功能"
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/tv_close" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

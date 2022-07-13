@@ -454,9 +454,9 @@ public class PreviewDialogFragment extends DialogFragment {
             }
         };
         
-        mShareData.onLongClickListener = v -> {
+        mShareData.onLongClickListener = (pos, v) -> {
             if (mShareData.config.onLongClickListener != null) {
-                return mShareData.config.onLongClickListener.onLongClick(mLlCustom);
+                return mShareData.config.onLongClickListener.onLongClick(pos, mLlCustom, v);
             }
             return false;
         };
@@ -483,6 +483,10 @@ public class PreviewDialogFragment extends DialogFragment {
                     float dx = mLlDotIndicator.getChildAt(1).getX() - mLlDotIndicator.getChildAt(0).getX();
                     mIvSelectDot.setTranslationX((position * dx) + positionOffset * dx);
                 }
+                
+                if (mShareData.config.onPageChangeListener != null) {
+                    mShareData.config.onPageChangeListener.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                }
             }
             
             @Override
@@ -493,6 +497,18 @@ public class PreviewDialogFragment extends DialogFragment {
                 // 设置文字版本当前页的值
                 if (mTvTextIndicator.getVisibility() == View.VISIBLE) {
                     updateTextIndicator();
+                }
+                
+                if (mShareData.config.onPageChangeListener != null) {
+                    mShareData.config.onPageChangeListener.onPageSelected(position);
+                }
+            }
+            
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+                if (mShareData.config.onPageChangeListener != null) {
+                    mShareData.config.onPageChangeListener.onPageScrollStateChanged(state);
                 }
             }
         });

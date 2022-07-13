@@ -2,12 +2,13 @@ package com.wgw.photo.preview;
 
 import android.graphics.drawable.Drawable;
 import android.view.View;
-import android.view.View.OnLongClickListener;
 
 import com.wgw.photo.preview.PhotoPreviewHelper.OnExitListener;
 import com.wgw.photo.preview.PhotoPreviewHelper.OnOpenListener;
 import com.wgw.photo.preview.PreloadImageView.DrawableLoadListener;
 import com.wgw.photo.preview.interfaces.IFindThumbnailView;
+import com.wgw.photo.preview.interfaces.OnImageLongClickListener;
+import com.wgw.photo.preview.interfaces.OnLongClickListener;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -38,7 +39,7 @@ class ShareData {
      * 图片长按监听
      */
     @Nullable
-    OnLongClickListener onLongClickListener;
+    OnImageLongClickListener onLongClickListener;
     
     /**
      * 预览退出监听

@@ -1,20 +1,32 @@
 package com.wgw.photopreview;
 
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView.ScaleType;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestManager;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.wgw.photo.preview.IndicatorType;
 import com.wgw.photo.preview.PhotoPreview;
 import com.wgw.photo.preview.ShapeTransformType;
 
 import java.util.Arrays;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager.widget.ViewPager.SimpleOnPageChangeListener;
 
 public class Main2Activity extends AppCompatActivity {
     
@@ -44,6 +56,18 @@ public class Main2Activity extends AppCompatActivity {
                 .sources(Arrays.asList(MainActivity.picDataMore))
                 .defaultShowPosition(position)
                 .animDuration(350L)
+                .onLongClickListener((position1, customViewRoot, imageView) -> {
+                    if (customViewRoot.getChildCount() == 0) {
+                        LayoutInflater.from(customViewRoot.getContext()).inflate(R.layout.item_image_long_click, customViewRoot);
+                    }
+                    
+                    customViewRoot.setOnClickListener(v -> customViewRoot.setVisibility(View.GONE));
+                    
+                    customViewRoot.findViewById(R.id.tv_close).setOnClickListener(v -> customViewRoot.setVisibility(View.GONE));
+                    
+                    customViewRoot.setVisibility(View.VISIBLE);
+                    return true;
+                })
                 .build()
                 .show(position1 -> layoutManager.findViewByPosition(position1).findViewById(R.id.itemIv));
         });
@@ -70,6 +94,18 @@ public class Main2Activity extends AppCompatActivity {
                 .sources(Arrays.asList(MainActivity.picDataMore))
                 .defaultShowPosition(position)
                 .animDuration(350L)
+                .onLongClickListener((position1, customViewRoot, imageView) -> {
+                    if (customViewRoot.getChildCount() == 0) {
+                        LayoutInflater.from(customViewRoot.getContext()).inflate(R.layout.item_image_long_click, customViewRoot);
+                    }
+                    
+                    customViewRoot.setOnClickListener(v -> customViewRoot.setVisibility(View.GONE));
+                    
+                    customViewRoot.findViewById(R.id.tv_close).setOnClickListener(v -> customViewRoot.setVisibility(View.GONE));
+                    
+                    customViewRoot.setVisibility(View.VISIBLE);
+                    return true;
+                })
                 .build()
                 .show(position1 -> {
                     View viewByPosition = layoutManager2.findViewByPosition(position1);

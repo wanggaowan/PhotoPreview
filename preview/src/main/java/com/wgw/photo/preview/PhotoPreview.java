@@ -29,6 +29,7 @@ import androidx.lifecycle.Lifecycle.Event;
 import androidx.lifecycle.Lifecycle.State;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
+import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
 
 /**
  * 图片预览，支持预览单张，多张图片。
@@ -332,6 +333,13 @@ public class PhotoPreview {
     // public void setExitAnimStartHideOrShowStatusBar(boolean doOP) {
     //     mConfig.exitAnimStartHideOrShowStatusBar = doOP;
     // }
+    
+    /**
+     * 多图预览时，左右滑动监听
+     */
+    public void setOnPageChangeListener(OnPageChangeListener listener) {
+        mConfig.onPageChangeListener = listener;
+    }
     
     /**
      * 不设置缩略图，预览界面打开关闭将只有从中心缩放动画
@@ -647,6 +655,14 @@ public class PhotoPreview {
         //     mConfig.exitAnimStartHideOrShowStatusBar = doOP;
         //     return this;
         // }
+        
+        /**
+         * 多图预览时，左右滑动监听
+         */
+        public Builder onPageChangeListener(OnPageChangeListener listener) {
+            mConfig.onPageChangeListener = listener;
+            return this;
+        }
         
         public PhotoPreview build() {
             return new PhotoPreview(this);

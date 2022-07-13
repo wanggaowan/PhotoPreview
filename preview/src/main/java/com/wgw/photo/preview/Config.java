@@ -9,6 +9,7 @@ import com.wgw.photo.preview.interfaces.OnLongClickListener;
 import java.util.List;
 
 import androidx.annotation.Nullable;
+import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
 
 /**
  * 预览配置
@@ -66,6 +67,11 @@ public class Config {
      */
     boolean exitAnimStartHideOrShowStatusBar = true;
     
+    /**
+     * 图片切换监听
+     */
+    public OnPageChangeListener onPageChangeListener;
+    
     public void apply(Config config) {
         if (config == null) {
             return;
@@ -90,6 +96,7 @@ public class Config {
         this.showThumbnailViewMask = config.showThumbnailViewMask;
         this.openAnimStartHideOrShowStatusBar = config.openAnimStartHideOrShowStatusBar;
         this.exitAnimStartHideOrShowStatusBar = config.exitAnimStartHideOrShowStatusBar;
+        this.onPageChangeListener = config.onPageChangeListener;
     }
     
     void release() {
@@ -112,5 +119,6 @@ public class Config {
         this.showThumbnailViewMask = true;
         this.openAnimStartHideOrShowStatusBar = false;
         this.exitAnimStartHideOrShowStatusBar = true;
+        this.onPageChangeListener = null;
     }
 }
