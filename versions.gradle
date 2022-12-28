@@ -3,7 +3,7 @@
 def versions = [:]
 versions.minSdkVersion = 16
 versions.targetSdkVersion = 30
-versions.compileSdkVersion = 28
+versions.compileSdkVersion = 33
 ext.versions = versions
 
 def deps = [:]

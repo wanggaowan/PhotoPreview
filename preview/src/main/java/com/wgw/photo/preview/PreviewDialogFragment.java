@@ -14,13 +14,14 @@ import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager.LayoutParams;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -176,14 +177,18 @@ public class PreviewDialogFragment extends DialogFragment {
             uiFlags |= View.INVISIBLE;
         }
         
-        window.getDecorView().setSystemUiVisibility(uiFlags);
-        window.getDecorView().setPadding(0, 0, 0, 0);
+        View decorView = window.getDecorView();
+        decorView.setSystemUiVisibility(uiFlags);
+        decorView.setPadding(0, 0, 0, 0);
+        
+        initEvent();
+        initViewData();
     }
     
     /**
      * 初始化是否全屏展示
      */
-    private void initFullScreen(boolean start) {
+    void initFullScreen(boolean start) {
         if (mShareData.config.fullScreen == null) {
             return;
         }
@@ -221,6 +226,13 @@ public class PreviewDialogFragment extends DialogFragment {
         } else {
             window.clearFlags(LayoutParams.FLAG_FULLSCREEN);
             window.addFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+                // android13 之后需要主动显示dialog的statusBar，否则缩略图所处activity需要等到预览界面关闭才展示状态栏
+                // 这样会出现强烈的顿挫感
+                View decorView = window.getDecorView();
+                WindowInsetsController controller = decorView.getWindowInsetsController();
+                controller.show(WindowInsets.Type.statusBars());
+            }
         }
     }
     
@@ -238,8 +250,6 @@ public class PreviewDialogFragment extends DialogFragment {
         }
         
         if (mSelfDismissDialog == null && savedInstanceState == null) {
-            initEvent();
-            initViewData();
             mDismiss = false;
         } else if (savedInstanceState != null || !mSelfDismissDialog) {
             // 被回收后恢复，则关闭弹窗

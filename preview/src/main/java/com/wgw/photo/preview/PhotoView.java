@@ -107,6 +107,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
     private void reset() {
         mIntAlpha = 255;
         mBgAnimStart = true;
+        mHelper.dragScaleChange(1f);
         mHelper.doViewBgAnim(Color.BLACK, RESET_ANIM_TIME, new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -194,6 +195,7 @@ class PhotoView extends com.github.chrisbanes.photoview.custom.PhotoView impleme
         if (scrollY < 0 && scale >= 0.6) {
             // 更改大小
             setScale(scale);
+            mHelper.dragScaleChange(scale);
         }
         return true;
     }

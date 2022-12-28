@@ -138,6 +138,8 @@ class PhotoPreviewHelper {
     private boolean mOpenAnimEnd = false;
     private List<OnOpenListener> mOpenListenerList;
     private List<OnExitListener> mExitListenerList;
+    // 上一次缩放倍率是否小于1
+    private boolean oldScaleLessOne = false;
     
     public PhotoPreviewHelper(PreviewDialogFragment fragment, int position) {
         mFragment = fragment;
@@ -670,6 +672,8 @@ class PhotoPreviewHelper {
             mOldPosition = mPosition;
         }
         
+        // 关闭时，最小缩放比设置为0f，否则手指放开，预览图又会回到1倍图大小，导致计算不准确
+        photoView.setMinimumScale(0f);
         resetHelpViewSize(viewHolder);
         
         if (mThumbnailView == null) {
@@ -730,7 +734,7 @@ class PhotoPreviewHelper {
                 float y = rootView.getHeight() / 2f - noScaleImageActualSize[1] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角Y轴值
                     - photoView.getScrollY() // 向下移动的距离，向上移动不会触发关闭
                     + imageActualSize[1] * (1 - photoView.getScale() - errorRatio); // 由于在向下移动时，伴随图片缩小，因此需要加上缩小高度
-                float x = rootView.getWidth() / 2f - noScaleImageActualSize[0] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角Z轴值
+                float x = rootView.getWidth() / 2f - noScaleImageActualSize[0] / 2 // 预览图片未移动未缩放时实际绘制drawable左上角X轴值
                     - photoView.getScrollX() // 向左或向右移动的距离
                     + imageActualSize[0] * (1 - photoView.getScale() - errorRatio); // 由于在向下移动时，伴随图片缩小，因此需要加上缩小宽度
                 
@@ -755,80 +759,74 @@ class PhotoPreviewHelper {
      * 使用Transition库实现过度动画
      */
     private void exitAnimByTransition(final View thumbnailView, final PhotoView photoView, View openThumbnailView) {
+        callOnExit(ANIM_START_PRE);
+        
         mHelperView.setScaleType(ScaleType.FIT_CENTER);
         mHelperView.setImageDrawable(photoView.getDrawable());
         
-        // 计算初始进入和退出时，同一个缩略图Y轴差值，产生差值主要是非沉浸式模式下由全屏切换到非全屏(反之亦然)状态栏高度导致
-        // 执行初始预览动画的ViewY轴坐标
-        int oldY = mSrcImageLocation[1];
-        final int offset;
-        if (thumbnailView == openThumbnailView) {
-            // 进入和退出缩略图位置不变
-            // 获取退出时缩略图位置
-            getSrcViewLocation(thumbnailView);
-            // 进入和退出缩略图Y轴差值，基本是偏移状态栏高度
-            offset = oldY - mSrcImageLocation[1];
-        } else {
-            if (openThumbnailView != null) {
-                // 查找
-                getSrcViewLocation(openThumbnailView);
-                // 进入和脱出缩列图差值
-                offset = oldY - mSrcImageLocation[1];
+        mThumbnailView.postDelayed(() -> {
+            // 延迟100毫秒后计算缩略图位置，因为关闭时存在全屏->非全屏或非全屏->全屏的转换，此时缩略图位置可能发生了改变
+            if (thumbnailView == openThumbnailView) {
+                // 进入和退出缩略图位置不变
+                // 获取退出时缩略图位置
+                getSrcViewLocation(thumbnailView);
             } else {
-                offset = 0;
+                getSrcViewLocation(thumbnailView);
+                getSrcViewSize(thumbnailView);
             }
             
-            getSrcViewLocation(thumbnailView);
-            getSrcViewSize(thumbnailView);
-        }
-        
-        callOnExit(ANIM_START_PRE);
-        
-        mHelperView.post(() -> {
-            TransitionSet transitionSet = new TransitionSet()
-                .setDuration(mAnimDuration)
-                .addTransition(new ChangeBounds())
-                .addTransition(new ChangeTransform())
-                .addTransition(new ChangeImageTransform().addTarget(mHelperView))
-                .setInterpolator(INTERPOLATOR)
-                .addListener(new TransitionListenerAdapter() {
-                    @Override
-                    public void onTransitionEnd(@NonNull Transition transition) {
-                        showThumbnailViewMask(false);
-                        callOnExit(ANIM_END);
-                    }
-                    
-                    @Override
-                    public void onTransitionStart(@NonNull Transition transition) {
-                        callOnExit(ANIM_START);
-                        if (photoView.getScale() >= 1) {
-                            showThumbnailViewMask(true);
+            mHelperView.post(() -> {
+                TransitionSet transitionSet = new TransitionSet()
+                    .setDuration(mAnimDuration)
+                    .addTransition(new ChangeBounds())
+                    .addTransition(new ChangeTransform())
+                    .addTransition(new ChangeImageTransform().addTarget(mHelperView))
+                    .setInterpolator(INTERPOLATOR)
+                    .addListener(new TransitionListenerAdapter() {
+                        @Override
+                        public void onTransitionEnd(@NonNull Transition transition) {
+                            showThumbnailViewMask(false);
+                            if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+                                // android13需要先将预览图隐藏再关闭预览的dialog，否则出现预览图发生位移闪屏
+                                mHelperViewParent.setVisibility(View.INVISIBLE);
+                                mHelperViewParent.post(() -> callOnExit(ANIM_END));
+                            } else {
+                                callOnExit(ANIM_END);
+                            }
                         }
-                        mHelperViewParent.setVisibility(View.VISIBLE);
-                        doViewBgAnim(Color.TRANSPARENT, mAnimDuration, null);
+                        
+                        @Override
+                        public void onTransitionStart(@NonNull Transition transition) {
+                            callOnExit(ANIM_START);
+                            if (photoView.getScale() >= 1) {
+                                showThumbnailViewMask(true);
+                            }
+                            mHelperViewParent.setVisibility(View.VISIBLE);
+                            doViewBgAnim(Color.TRANSPARENT, mAnimDuration, null);
+                        }
+                    });
+                
+                if (mShareData != null && mShareData.config.shapeTransformType != null) {
+                    if (mShareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
+                        transitionSet.addTransition(
+                            new ChangeShape(0, Math.min(mSrcViewSize[0], mSrcViewSize[1]) / 2f)
+                                .addTarget(mHelperView));
+                    } else {
+                        transitionSet.addTransition(
+                            new ChangeShape(0, mShareData.config.shapeCornerRadius)
+                                .addTarget(mHelperView));
                     }
-                });
-            
-            if (mShareData != null && mShareData.config.shapeTransformType != null) {
-                if (mShareData.config.shapeTransformType == ShapeTransformType.CIRCLE) {
-                    transitionSet.addTransition(
-                        new ChangeShape(0, Math.min(mSrcViewSize[0], mSrcViewSize[1]) / 2f)
-                            .addTarget(mHelperView));
-                } else {
-                    transitionSet.addTransition(
-                        new ChangeShape(0, mShareData.config.shapeCornerRadius)
-                            .addTarget(mHelperView));
                 }
-            }
-            
-            TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
-            
-            mHelperViewParent.setTranslationX(mSrcImageLocation[0]);
-            mHelperViewParent.setTranslationY(mSrcImageLocation[1] + (mShareData != null && mShareData.config.exitAnimStartHideOrShowStatusBar ? offset : 0));
-            setViewSize(mHelperViewParent, mSrcViewParentSize[0], mSrcViewParentSize[1]);
-            
-            setHelperViewDataByThumbnail();
-        });
+                
+                TransitionManager.beginDelayedTransition((ViewGroup) mHelperViewParent.getParent(), transitionSet);
+                
+                mHelperViewParent.setTranslationX(mSrcImageLocation[0]);
+                mHelperViewParent.setTranslationY(mSrcImageLocation[1]);
+                setViewSize(mHelperViewParent, mSrcViewParentSize[0], mSrcViewParentSize[1]);
+                
+                setHelperViewDataByThumbnail();
+            });
+        }, 100);
     }
     
     /**
@@ -1056,6 +1054,23 @@ class PhotoPreviewHelper {
                     onOpenListener.onEnd();
                 }
             }
+        }
+    }
+    
+    /**
+     * 预览图拖拽导致缩放倍率改变
+     */
+    void dragScaleChange(float scale) {
+        if (scale < 1) {
+            if (!oldScaleLessOne) {
+                mFragment.initFullScreen(false);
+            }
+            oldScaleLessOne = true;
+        } else {
+            if (oldScaleLessOne) {
+                mFragment.initFullScreen(true);
+            }
+            oldScaleLessOne = false;
         }
     }
     
