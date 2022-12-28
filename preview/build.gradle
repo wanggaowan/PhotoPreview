@@ -17,8 +17,8 @@ afterEvaluate {
                 artifact sourcesJar
 
                 groupId = 'com.github.wanggaowan'
-                artifactId = 'preview'
-                version = "2.4.4"
+                artifactId = 'PhotoPreview'
+                version = "2.4.5"
             }
         }
 
