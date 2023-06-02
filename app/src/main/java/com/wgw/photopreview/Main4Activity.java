@@ -1,6 +1,9 @@
 package com.wgw.photopreview;
 
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
@@ -22,6 +25,9 @@ public class Main4Activity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (VERSION.SDK_INT >= VERSION_CODES.M) {
+            getWindow().getDecorView().setSystemUiVisibility(getWindow().getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);//
+        }
         setContentView(R.layout.activity_main2);
         final RecyclerView recyclerView = findViewById(R.id.rv);
         GridLayoutManager layoutManager = new GridLayoutManager(this, 3);

@@ -226,13 +226,13 @@ public class PreviewDialogFragment extends DialogFragment {
         } else {
             window.clearFlags(LayoutParams.FLAG_FULLSCREEN);
             window.addFlags(LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-            if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
-                // android13 之后需要主动显示dialog的statusBar，否则缩略图所处activity需要等到预览界面关闭才展示状态栏
-                // 这样会出现强烈的顿挫感
-                View decorView = window.getDecorView();
-                WindowInsetsController controller = decorView.getWindowInsetsController();
-                controller.show(WindowInsets.Type.statusBars());
-            }
+            // if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+            //     // android13 之后需要主动显示dialog的statusBar，否则缩略图所处activity需要等到预览界面关闭才展示状态栏
+            //     // 这样会出现强烈的顿挫感
+            //     View decorView = window.getDecorView();
+            //     WindowInsetsController controller = decorView.getWindowInsetsController();
+            //     controller.show(WindowInsets.Type.statusBars());
+            // }
         }
     }
     
@@ -302,6 +302,49 @@ public class PreviewDialogFragment extends DialogFragment {
         
         // 跟随打开预览界面的显示状态
         return (activity.getWindow().getAttributes().flags & LayoutParams.FLAG_FULLSCREEN) != 0;
+    }
+    
+    /**
+     * 父窗口是否高亮状态栏，此时字体是黑色的
+     */
+    private boolean isParentLightStatusBar() {
+        if (VERSION.SDK_INT < VERSION_CODES.M) {
+            return false;
+        }
+        
+        FragmentActivity activity = getActivity();
+        if (activity == null || activity.getWindow() == null) {
+            return false;
+        }
+        
+        View decorView = activity.getWindow().getDecorView();
+        if (decorView == null) {
+            return false;
+        }
+        
+        // 跟随打开预览界面的显示状态
+        return (decorView.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0;
+    }
+    
+    /**
+     * 父窗口是否高亮状态栏，此时字体是黑色的
+     */
+    private void setLightStatusBar() {
+        if (VERSION.SDK_INT < VERSION_CODES.M) {
+            return;
+        }
+        
+        Dialog dialog = getDialog();
+        if (dialog == null) {
+            return;
+        }
+        
+        Window window = dialog.getWindow();
+        if (window == null) {
+            return;
+        }
+        View decorView = window.getDecorView();
+        decorView.setSystemUiVisibility(decorView.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
     }
     
     public void show(Context context, FragmentManager fragmentManager, Config config, View thumbnailView) {
@@ -407,9 +450,14 @@ public class PreviewDialogFragment extends DialogFragment {
     
     private void initEvent() {
         mShareData.onOpenListener = new PhotoPreviewHelper.OnOpenListener() {
-            
             @Override
             public void onStartPre() {
+                if (Boolean.TRUE.equals(mShareData.config.fullScreen)) {
+                    if (isParentLightStatusBar()) {
+                        setLightStatusBar();
+                    }
+                }
+                
                 if (mShareData.config.openAnimStartHideOrShowStatusBar) {
                     initFullScreen(true);
                 }
@@ -434,6 +482,10 @@ public class PreviewDialogFragment extends DialogFragment {
         mShareData.onExitListener = new PhotoPreviewHelper.OnExitListener() {
             @Override
             public void onStartPre() {
+                if (isParentLightStatusBar()) {
+                    setLightStatusBar();
+                }
+                
                 if (mShareData.config.exitAnimStartHideOrShowStatusBar) {
                     initFullScreen(false);
                 }
