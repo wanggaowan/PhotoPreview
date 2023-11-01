@@ -113,8 +113,6 @@ class PhotoPreviewHelper {
     
     // 当前界面显示预览图位置
     private int mPosition;
-    // 上一次统计预览图对应缩列图数据时预览图所处位置
-    private int mOldPosition = -1;
     
     private View mThumbnailView;
     private int mThumbnailViewVisibility = View.VISIBLE;
@@ -192,14 +190,14 @@ class PhotoPreviewHelper {
     }
     
     private void initData() {
-        if (mPosition != mOldPosition) {
-            mThumbnailView = getThumbnailView(mShareData);
+        View thumbnailView = getThumbnailView(mShareData);
+        if (thumbnailView != mThumbnailView) {
+            mThumbnailView = thumbnailView;
             if (mThumbnailView != null) {
                 mThumbnailViewVisibility = mThumbnailView.getVisibility();
             }
             mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
             initThumbnailViewScaleType();
-            mOldPosition = mPosition;
         }
         
         mNeedInAnim = mAnimDuration > 0 && mShareData.showNeedAnim;
@@ -307,11 +305,11 @@ class PhotoPreviewHelper {
         long delay = mShareData.openAnimDelayTime;
         callOnOpen(ANIM_START_PRE);
         if (delay > 0) {
-            mHelperView.postDelayed(this :: doEnterAnimByTransition, delay);
+            viewPostDelayed(this::doEnterAnimByTransition, delay, mHelperView);
             initEnterAnimByTransition(thumbnailView);
         } else {
             initEnterAnimByTransition(thumbnailView);
-            mHelperView.post(this :: doEnterAnimByTransition);
+            viewPost(this::doEnterAnimByTransition, mHelperView);
         }
     }
     
@@ -566,7 +564,7 @@ class PhotoPreviewHelper {
                     doViewBgAnim(Color.BLACK, mAnimDuration, null);
                     mHelperViewParent.setVisibility(View.VISIBLE);
                     // 不延迟会有闪屏
-                    mThumbnailView.postDelayed(() -> showThumbnailViewMask(true), mAnimDuration / 10);
+                    viewPostDelayed(() -> showThumbnailViewMask(true), mAnimDuration / 10, mThumbnailView, mHelperView);
                 }
                 
                 @Override
@@ -662,14 +660,13 @@ class PhotoPreviewHelper {
         
         // 记录预览打开时，缩略图对象
         View openThumbnailView = mThumbnailView;
-        if (mPosition != mOldPosition) {
-            mThumbnailView = getThumbnailView(mShareData);
+        mThumbnailView = getThumbnailView(mShareData);
+        if (openThumbnailView != mThumbnailView) {
             if (mThumbnailView != null) {
                 mThumbnailViewVisibility = mThumbnailView.getVisibility();
             }
             mAnimDuration = getOpenAndExitAnimDuration(mThumbnailView, mShareData);
             initThumbnailViewScaleType();
-            mOldPosition = mPosition;
         }
         
         // 关闭时，最小缩放比设置为0f，否则手指放开，预览图又会回到1倍图大小，导致计算不准确
@@ -764,7 +761,7 @@ class PhotoPreviewHelper {
         mHelperView.setScaleType(ScaleType.FIT_CENTER);
         mHelperView.setImageDrawable(photoView.getDrawable());
         
-        mThumbnailView.postDelayed(() -> {
+        viewPostDelayed(() -> {
             // 延迟100毫秒后计算缩略图位置，因为关闭时存在全屏->非全屏或非全屏->全屏的转换，此时缩略图位置可能发生了改变
             if (thumbnailView == openThumbnailView) {
                 // 进入和退出缩略图位置不变
@@ -775,7 +772,7 @@ class PhotoPreviewHelper {
                 getSrcViewSize(thumbnailView);
             }
             
-            mHelperView.post(() -> {
+            viewPost(() -> {
                 TransitionSet transitionSet = new TransitionSet()
                     .setDuration(mAnimDuration)
                     .addTransition(new ChangeBounds())
@@ -789,7 +786,7 @@ class PhotoPreviewHelper {
                             if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
                                 // android13需要先将预览图隐藏再关闭预览的dialog，否则出现预览图发生位移闪屏
                                 mHelperViewParent.setVisibility(View.INVISIBLE);
-                                mHelperViewParent.post(() -> callOnExit(ANIM_END));
+                                viewPost(() -> callOnExit(ANIM_END), mHelperViewParent);
                             } else {
                                 callOnExit(ANIM_END);
                             }
@@ -825,8 +822,26 @@ class PhotoPreviewHelper {
                 setViewSize(mHelperViewParent, mSrcViewParentSize[0], mSrcViewParentSize[1]);
                 
                 setHelperViewDataByThumbnail();
-            });
-        }, 100);
+            }, mHelperView);
+        }, 100, mThumbnailView, mHelperView);
+    }
+    
+    private void viewPostDelayed(Runnable runnable, long delayMillis, View... views) {
+        for (View view : views) {
+            if (view.postDelayed(runnable, delayMillis)) {
+                return;
+            }
+        }
+        runnable.run();
+    }
+    
+    private void viewPost(Runnable runnable, View... views) {
+        for (View view : views) {
+            if (view.post(runnable)) {
+                return;
+            }
+        }
+        runnable.run();
     }
     
     /**

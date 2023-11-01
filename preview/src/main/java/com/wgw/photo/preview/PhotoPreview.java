@@ -134,6 +134,19 @@ public class PhotoPreview {
         return new Builder(fragment);
     }
     
+    /**
+     * 创建构建器，链式调用
+     */
+    public static Builder with(@NonNull Object activityOrFragment) {
+        Objects.requireNonNull(activityOrFragment);
+        if (activityOrFragment instanceof FragmentActivity) {
+            return new Builder((FragmentActivity) activityOrFragment);
+        } else if (activityOrFragment instanceof Fragment) {
+            return new Builder((Fragment) activityOrFragment);
+        }
+        throw new IllegalArgumentException("activityOrFragment must be FragmentActivity or Fragment");
+    }
+    
     public PhotoPreview(@NonNull Builder builder) {
         Objects.requireNonNull(builder);
         mFragmentActivity = builder.activity;
@@ -352,7 +365,8 @@ public class PhotoPreview {
      * 展示预览
      *
      * @param thumbnailView 缩略图{@link View}，建议传{@link ImageView}对象，这样过度效果更好。
-     *                      如果多图预览，请使用{@link #show(IFindThumbnailView)}
+     *                      如果多图预览，请使用{@link #show(IFindThumbnailView)}。如果thumbnailView
+     *                      是在列表中，且预览过程可能发生thumbnailView变更，请使用{@link #show(IFindThumbnailView)}。
      */
     public void show(final View thumbnailView) {
         show(thumbnailView, null);
@@ -666,6 +680,33 @@ public class PhotoPreview {
         
         public PhotoPreview build() {
             return new PhotoPreview(this);
+        }
+        
+        /**
+         * 不设置缩略图，预览界面打开关闭将只有从中心缩放动画
+         */
+        public void show() {
+            build().show();
+        }
+        
+        /**
+         * 展示预览
+         *
+         * @param thumbnailView 缩略图{@link View}，建议传{@link ImageView}对象，这样过度效果更好。
+         *                      如果多图预览，请使用{@link #show(IFindThumbnailView)}。如果thumbnailView
+         *                      是在列表中，且预览过程可能发生thumbnailView变更，请使用{@link #show(IFindThumbnailView)}。
+         */
+        public void show(final View thumbnailView) {
+            build().show(thumbnailView, null);
+        }
+        
+        /**
+         * 展示预览
+         *
+         * @param findThumbnailView 多图预览时，打开和关闭预览时用于提供缩略图对象，用于过度动画
+         */
+        public void show(final IFindThumbnailView findThumbnailView) {
+            build().show(null, findThumbnailView);
         }
     }
 }
